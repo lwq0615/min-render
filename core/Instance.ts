@@ -1,17 +1,12 @@
+import { Component, Instance$, JsxNode, LIFE, RealDom } from "./types/instance";
 import { isListener, getListenerName } from "./utils";
 import { v4 as uuidv4 } from "uuid";
 
 const REACT_ELEMENT_TYPE = Symbol.for("react.element");
-
-const LIFE = {
-  create: 0,
-  created: 1,
-  mounted: 2,
-};
-function createInstanceRealDom(DomInstance) {
+function createInstanceRealDom(component: Component): Promise<RealDom> {
   const instance = new Instance();
   const proxy = getProxy(instance);
-  const render = DomInstance.bind(proxy);
+  const render = component.bind(proxy);
   render();
   instance.$.setRender(render);
   instance.$.invokeCreatedLifeHandles();
@@ -21,41 +16,42 @@ function createInstanceRealDom(DomInstance) {
   });
 }
 
-async function createRealDom(jsxDom) {
-  if (typeof jsxDom.type !== "string") {
-    return await createInstanceRealDom(jsxDom.type);
+async function createRealDomByJsx(jsxNode: JsxNode): Promise<RealDom> {
+  if (typeof jsxNode.type !== "string") {
+    return await createInstanceRealDom(jsxNode.type);
   }
-  const realDom = document.createElement(jsxDom.type);
-  for (const prop in jsxDom.props) {
+  const realDom = document.createElement(jsxNode.type);
+  for (const prop in jsxNode.props) {
     const contProps = ["children"];
     if (contProps.includes(prop)) {
       continue;
     }
-    const value = jsxDom.props[prop];
+    const value = jsxNode.props[prop];
     if (isListener(prop)) {
-      realDom[getListenerName(prop)] = value;
+      (realDom as any)[getListenerName(prop)] = value;
     } else {
       realDom.setAttribute(prop, value);
     }
   }
-  if ("children" in jsxDom.props) {
-    if (Array.isArray(jsxDom.props.children)) {
-      for (const child of jsxDom.props.children) {
-        realDom.append(await createRealDom(child));
+  if ("children" in jsxNode.props) {
+    if (Array.isArray(jsxNode.props.children)) {
+      for (const child of jsxNode.props.children) {
+        realDom.append(await createRealDomByJsx(child));
       }
     }
     // 是非文本(自定义组件 || 原生html标签)
-    else if (jsxDom.props.children.$$typeof === REACT_ELEMENT_TYPE) {
-      realDom.append(await createRealDom(jsxDom.props.children));
+    else if (jsxNode.props.children.$$typeof === REACT_ELEMENT_TYPE) {
+      realDom.append(await createRealDomByJsx(jsxNode.props.children));
     } else {
-      realDom.append(String(jsxDom.props.children));
+      realDom.append(String(jsxNode.props.children));
     }
   }
   return realDom;
 }
 
 export class Instance {
-  $ = {
+  [name: string | symbol]: unknown
+  $: Instance$ = {
     key: uuidv4(),
     dom: null,
     life: LIFE.create,
@@ -64,7 +60,7 @@ export class Instance {
       this.createdLifeHandles.push(fun);
     },
     invokeCreatedLifeHandles() {
-      this.createdLifeHandles.forEach((fun) => {
+      (this as Instance$).createdLifeHandles.forEach((fun) => {
         fun();
       });
       this.life = LIFE.created;
@@ -76,12 +72,12 @@ export class Instance {
       }
     },
     invokeMountedLifeHandles() {
-      this.mountedLifeHandles.forEach((fun) => {
+      (this as Instance$).mountedLifeHandles.forEach((fun) => {
         fun();
       });
     },
-    render: null,
-    renderTask: null,
+    render: void 0,
+    renderTask: void 0,
     setRender(render) {
       this.render = render;
     },
@@ -89,11 +85,11 @@ export class Instance {
       if (this.renderTask) {
         return;
       }
-      this.renderTask = new Promise((resolve) => {
+      this.renderTask = new Promise<void>((resolve) => {
         Promise.resolve().then(async () => {
-          const jsxDom = this.render();
-          const realDom = await createRealDom(jsxDom);
-          if(this.dom) {
+          const jsxNode = this.render();
+          const realDom = await createRealDomByJsx(jsxNode);
+          if (this.dom) {
             this.dom.parentElement.replaceChild(realDom, this.dom)
           }
           this.dom = realDom;
@@ -107,9 +103,9 @@ export class Instance {
   };
 }
 
-export function getProxy(instance) {
+export function getProxy(instance: Instance) {
   return new Proxy(instance, {
-    get(target, key) {
+    get(target, key: string) {
       return target[key];
     },
     set(target, key, value) {

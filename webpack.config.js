@@ -5,15 +5,22 @@ const { DefinePlugin } = require("webpack");
 
 module.exports = {
   mode: "development",
-  entry: "./src/index.jsx",
+  entry: "./src/index.tsx",
   output: {
     path: path.resolve(__dirname, "./dist"),
     filename: "[name].js",
   },
+  resolve: {
+    extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@core": path.resolve(__dirname, "./core"),
+    },
+  },
   module: {
     rules: [
       {
-        test: /\.js[x]$/,
+        test: /[\.ts[x]|\.js[x]]$/,
         exclude: /node_modules/,
         use: {
           loader: "babel-loader",

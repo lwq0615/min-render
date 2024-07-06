@@ -1,4 +1,4 @@
-import { renderRoot } from "../core/index";
+import { renderRoot } from "../core";
 
 function Test2() {
   return <span>test2s</span>
