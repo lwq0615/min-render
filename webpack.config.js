@@ -11,7 +11,7 @@ module.exports = {
     filename: "[name].js",
   },
   resolve: {
-    extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    extensions: ['.js', '.jsx', '.ts', '.tsx', ".json"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@core": path.resolve(__dirname, "./core"),

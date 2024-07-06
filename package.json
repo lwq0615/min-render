@@ -5,14 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "webpack serve"
+    "dev": "webpack serve",
+    "build": "webpack"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@babel/core": "^7.24.7",
     "@babel/plugin-transform-react-jsx": "^7.24.7",
-    "@babel/preset-env": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
     "@types/react": "^18.3.3",
     "@types/uuid": "^10.0.0",
