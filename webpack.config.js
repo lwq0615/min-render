@@ -30,12 +30,12 @@ module.exports = {
   },
   plugins: [
     new CleanWebpackPlugin(),
+    new DefinePlugin({}),
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "./public/index.html"),
       filename: "index.html",
       title: "jsx",
     }),
-    new DefinePlugin({}),
   ],
   devServer: {
     static: path.resolve(__dirname, "./public"),
