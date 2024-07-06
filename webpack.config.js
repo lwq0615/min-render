@@ -34,7 +34,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "./public/index.html"),
       filename: "index.html",
-      title: "jsx",
+      title: "jsx"
     }),
   ],
   devServer: {
