@@ -14,7 +14,7 @@ export enum LIFE {
   mounted = 2
 };
 
-export type RealDom = string | Node
+export type RealDom = HTMLElement | Text
 
 
 export type Instance$ = {
