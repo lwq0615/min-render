@@ -90,7 +90,9 @@ export class Instance {
           const jsxNode = this.render();
           const realDom = await createRealDomByJsx(jsxNode);
           if (this.dom) {
-            this.dom.parentElement.replaceChild(realDom, this.dom)
+            try {
+              this.dom.parentElement.replaceChild(realDom, this.dom)
+            } catch (err) { }
           }
           this.dom = realDom;
           this.life = LIFE.mounted;
