@@ -1,7 +1,9 @@
 import { renderRoot } from "../core";
 
-function Test2() {
-  return <span>test2s</span>
+function Test2(props) {
+  return <span>test2s
+    {props.children}
+  </span>
 }
 
 function Test() {
@@ -12,15 +14,14 @@ function Test() {
     this.count++;
   });
   return (
-    <div>
-      <div>123</div>
-      <Test2/>
-      <button onClick={() => {
-        this.count++
-      }}>{this.count}</button>
-      <button onClick={() => console.log(this)}>log</button>
-    </div>
+    <Test2 name="222" ref="test2">
+      <div>
+        <div>23</div>
+        <div>3</div>
+      </div>
+      <div>322</div>
+    </Test2>
   );
 }
 
-renderRoot(Test, document.getElementById("app"));
+renderRoot(<Test/>, document.getElementById("app"));

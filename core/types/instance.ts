@@ -1,8 +1,7 @@
 
 export type JsxNode = {
-  type: string | Component,
-  props?: { [key: string]: any },
-  children?: JsxNode[] | JsxNode | unknown
+  type: string | Component | symbol,
+  props?: { [key: string]: any, children?: JsxNode[] | JsxNode }
 }
 
 export type Component = (props?: unknown) => JsxNode

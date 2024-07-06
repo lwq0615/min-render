@@ -1,13 +1,13 @@
 import { Component, JsxNode, LIFE, RealDom } from "./types/instance";
-import { isListener, getListenerName, isJsxNode } from "./utils";
+import { isListener, getListenerName, isJsxNode, isFragmentJsxNode } from "./utils";
 import { v4 as uuidv4 } from "uuid";
 
 
-function createInstance(component: Component): Promise<Instance> {
+function createInstance(jsxNode: JsxNode): Promise<Instance> {
   return new Promise((resolve) => {
     const instance = new Instance();
     const proxy = getProxy(instance);
-    const render = component.bind(proxy)
+    const render = (jsxNode.type as Component).bind(proxy, jsxNode.props)
     instance.$.setRender(render)
     render()
     instance.$.invokeCreatedLifeHandles()
@@ -18,61 +18,67 @@ function createInstance(component: Component): Promise<Instance> {
   })
 }
 
-export function replaceInstanceRealDom(component: Component, dom: Node) {
-  createInstanceRealDom(component).then(realDom => {
-    dom.parentElement.replaceChild(realDom as any, dom)
-  })
-}
-
-
-function createInstanceRealDom(component: Component): Promise<RealDom> {
-  return createInstance(component).then(instance => {
-    return instance.$.dom;
-  });
-}
-
-async function createRealDomByJsx(jsxNode: JsxNode): Promise<RealDom> {
-  if(!isJsxNode(jsxNode)) {
-    return document.createTextNode(String(jsxNode))
-  }
-  // 组件
-  if (typeof jsxNode.type !== "string") {
-    return await createInstanceRealDom(jsxNode.type);
-  }
-  // 原生html标签
-  const realDom = document.createElement(jsxNode.type);
-  for (const prop in jsxNode.props) {
-    const contProps = ["children"];
-    if (contProps.includes(prop)) {
-      continue;
-    }
-    const value = jsxNode.props[prop];
-    if (isListener(prop)) {
-      (realDom as any)[getListenerName(prop)] = value;
-    } else {
-      realDom.setAttribute(prop, value);
-    }
-  }
-  if ("children" in jsxNode.props) {
+export async function createRealDomByJsx(jsxNode: JsxNode): Promise<RealDom[]> {
+  // 返回jsx是多节点
+  if (isFragmentJsxNode(jsxNode)) {
     if (Array.isArray(jsxNode.props.children)) {
-      for (const child of jsxNode.props.children) {
-        realDom.append(await createRealDomByJsx(child));
-      }
-    }
-    // 是非文本(自定义组件 || 原生html标签)
-    else if (isJsxNode(jsxNode.props.children)) {
-      realDom.append(await createRealDomByJsx(jsxNode.props.children));
+      return await Promise.all(jsxNode.props.children?.map(childJsxNode => {
+        return createRealDomByJsx(childJsxNode)
+      })).then(res => res.reduce((pre, cur) => pre.concat(cur)))
     } else {
-      realDom.append(String(jsxNode.props.children));
+      return await createRealDomByJsx(jsxNode.props.children)
+    }
+  } else {
+    // 返回的不是jsx
+    if (!isJsxNode(jsxNode)) {
+      return [document.createTextNode(String(jsxNode))]
+    }
+    // 自定义组件
+    else if (typeof jsxNode.type !== "string") {
+      return (await createInstance(jsxNode)).$.doms
+    } else {
+      // 原生html标签
+      const realDom = document.createElement(jsxNode.type);
+      for (const prop in jsxNode.props) {
+        const contProps = ["children"];
+        if (contProps.includes(prop)) {
+          continue;
+        }
+        const value = jsxNode.props[prop];
+        if (isListener(prop)) {
+          (realDom as any)[getListenerName(prop)] = value;
+        } else {
+          realDom.setAttribute(prop, value);
+        }
+      }
+      if ("children" in jsxNode.props) {
+        if (Array.isArray(jsxNode.props.children)) {
+          for (const child of jsxNode.props.children) {
+            let childrens: RealDom[] = []
+            if (Array.isArray(child)) {
+              childrens = await Promise.all(child.map(item => createRealDomByJsx(item))).then(res => {
+                return res.reduce((pre, cur) => pre.concat(cur))
+              })
+            } else {
+              childrens = await createRealDomByJsx(child)
+            }
+            childrens.forEach(item => {
+              realDom.append(item)
+            })
+          }
+        } else {
+          realDom.append((await createRealDomByJsx(jsxNode.props.children))[0]);
+        }
+      }
+      return [realDom];
     }
   }
-  return realDom;
 }
 
 
 export class Instance$ {
   key: string = uuidv4()
-  dom: RealDom
+  doms: RealDom[] = []
   life: LIFE = LIFE.create
   createdLifeHandles: Function[] = []
   useCreated(fun: Function): void {
@@ -110,13 +116,15 @@ export class Instance$ {
           return
         }
         const jsxNode = this.render();
-        const realDom = await createRealDomByJsx(jsxNode);
-        if (this.dom) {
+        console.log(jsxNode)
+        const realDoms = await createRealDomByJsx(jsxNode);
+        // TODO 优化替换逻辑
+        this.doms.forEach((dom, i) => {
           try {
-            this.dom.parentElement?.replaceChild(realDom, this.dom)
+            dom.parentElement?.replaceChild(realDoms[i], dom)
           } catch (err) { }
-        }
-        this.dom = realDom;
+        })
+        this.doms = realDoms;
         this.life = LIFE.mounted;
         this.renderTask = null;
         resolve();
@@ -124,6 +132,7 @@ export class Instance$ {
     });
     return this.renderTask;
   }
+  refs: {[name: string]: Instance} = {}
 }
 
 export class Instance {
@@ -135,9 +144,12 @@ export function getProxy(instance: Instance) {
   return new Proxy(instance, {
     get(target, key: string) {
       const proxyHooks = ['useMounted', 'useCreated']
-      if(proxyHooks.includes(key)) {
+      const proxyFields = ['refs']
+      if (proxyHooks.includes(key)) {
         return (target.$ as any)[key].bind(target.$)
-      }else {
+      } else if (proxyFields.includes(key)) {
+        return (target.$ as any)[key]
+      } else {
         return target[key];
       }
     },
