@@ -3,6 +3,12 @@ import { isListener, getListenerName, isJsxNode, isFragmentJsxNode, isComponent 
 import { v4 as uuidv4 } from "uuid";
 
 
+/**
+ * 创建组件实例
+ * @param jsxNode 组件jsx节点 
+ * @param parentDom 组件渲染的真实父dom
+ * @param parentInstance 组件的父实例
+ */
 export function createInstance(jsxNode: JsxNode, parentDom: HTMLElement, parentInstance?: Instance): Promise<Instance> {
   return new Promise((resolve) => {
     const instance = new Instance(parentDom, jsxNode, parentInstance);
@@ -18,7 +24,17 @@ export function createInstance(jsxNode: JsxNode, parentDom: HTMLElement, parentI
   })
 }
 
-export async function appendRealDomByJsxNode(jsxNode: JsxNode, parentDom: HTMLElement, instance: Instance): Promise<Array<RealDom | Instance>> {
+/**
+ * 渲染jsx节点内容到真实dom
+ * @param jsxNode jsx节点
+ * @param parentDom 真实dom
+ * @param instance 节点所在的组件实例
+ */
+export async function appendRealDomByJsxNode(
+  jsxNode: JsxNode,
+  parentDom: HTMLElement,
+  instance: Instance
+): Promise<Array<RealDom | Instance>> {
   // 返回jsx是多节点
   if (isFragmentJsxNode(jsxNode)) {
     if (Array.isArray(jsxNode.props.children)) {
@@ -55,6 +71,7 @@ export async function appendRealDomByJsxNode(jsxNode: JsxNode, parentDom: HTMLEl
           realDom.setAttribute(prop, value);
         }
       }
+      // 递归渲染子节点
       if ("children" in jsxNode.props) {
         if (Array.isArray(jsxNode.props.children)) {
           for (const child of jsxNode.props.children) {
@@ -141,6 +158,15 @@ export class Instance$ {
   updateDom(): Promise<void> {
     return Promise.resolve()
   }
+  destroyDom() {
+    for (const dom of this.doms) {
+      if (dom instanceof Instance) {
+        dom.$.destroyDom()
+      } else {
+        dom.remove()
+      }
+    }
+  }
   refs: { [name: string]: Instance } = {}
 }
 
@@ -153,10 +179,10 @@ export class Instance {
 }
 
 export function getProxy(instance: Instance) {
+  const proxyHooks = ['useMounted', 'useCreated']
+  const proxyFields = ['refs']
   return new Proxy(instance, {
     get(target, key: string) {
-      const proxyHooks = ['useMounted', 'useCreated']
-      const proxyFields = ['refs']
       if (proxyHooks.includes(key)) {
         return (target.$ as any)[key].bind(target.$)
       } else if (proxyFields.includes(key)) {
@@ -166,6 +192,9 @@ export function getProxy(instance: Instance) {
       }
     },
     set(target, key, value) {
+      if (proxyFields.concat(proxyHooks).includes(key as string)) {
+        return true
+      }
       target[key] = value;
       if (instance.$.life >= 2) {
         // 设置响应式的值，并且生命周期在mounted后，重新渲染
