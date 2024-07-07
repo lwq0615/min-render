@@ -1,7 +1,7 @@
 import { renderRoot } from "../core";
 
-function Test2(props) {
-  return <span>test2s
+function Test2(props: any) {
+  return <span>
     {props.children}
   </span>
 }
@@ -14,14 +14,13 @@ function Test() {
     this.count++;
   });
   return (
-    <Test2 name="222" ref="test2">
-      <div>
-        <div>23</div>
-        <div>3</div>
-      </div>
-      <div>322</div>
-    </Test2>
+    <>
+      <Test2 name="222" ref="test2">
+        <div>322</div>
+      </Test2>
+      <div>333div</div>
+    </>
   );
 }
 
-renderRoot(<Test/>, document.getElementById("app"));
+renderRoot(<Test />, document.getElementById("app"));

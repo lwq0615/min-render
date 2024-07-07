@@ -20,3 +20,7 @@ export function isJsxNode(obj: any) {
 export function isFragmentJsxNode(obj: JsxNode) {
   return obj.type === REACT_FRAGMENT_TYPE
 }
+
+export function isComponent(obj: JsxNode) {
+  return typeof obj.type  !== 'string' && typeof obj.type !== 'symbol'
+}

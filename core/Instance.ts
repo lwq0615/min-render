@@ -1,11 +1,11 @@
 import { Component, JsxNode, LIFE, RealDom } from "./types/instance";
-import { isListener, getListenerName, isJsxNode, isFragmentJsxNode } from "./utils";
+import { isListener, getListenerName, isJsxNode, isFragmentJsxNode, isComponent } from "./utils";
 import { v4 as uuidv4 } from "uuid";
 
 
-function createInstance(jsxNode: JsxNode): Promise<Instance> {
+export function createInstance(jsxNode: JsxNode, parentDom: HTMLElement, parentInstance?: Instance): Promise<Instance> {
   return new Promise((resolve) => {
-    const instance = new Instance();
+    const instance = new Instance(parentDom, jsxNode, parentInstance);
     const proxy = getProxy(instance);
     const render = (jsxNode.type as Component).bind(proxy, jsxNode.props)
     instance.$.setRender(render)
@@ -18,27 +18,31 @@ function createInstance(jsxNode: JsxNode): Promise<Instance> {
   })
 }
 
-export async function createRealDomByJsx(jsxNode: JsxNode): Promise<RealDom[]> {
+export async function appendRealDomByJsxNode(jsxNode: JsxNode, parentDom: HTMLElement, instance: Instance): Promise<Array<RealDom | Instance>> {
   // 返回jsx是多节点
   if (isFragmentJsxNode(jsxNode)) {
     if (Array.isArray(jsxNode.props.children)) {
-      return await Promise.all(jsxNode.props.children?.map(childJsxNode => {
-        return createRealDomByJsx(childJsxNode)
-      })).then(res => res.reduce((pre, cur) => pre.concat(cur)))
+      let doms: Array<RealDom | Instance> = []
+      for (const childJsxNode of jsxNode.props.children) {
+        doms = doms.concat(await appendRealDomByJsxNode(childJsxNode, parentDom, instance))
+      }
+      return doms
     } else {
-      return await createRealDomByJsx(jsxNode.props.children)
+      return await appendRealDomByJsxNode(jsxNode.props.children, parentDom, instance)
     }
   } else {
     // 返回的不是jsx
     if (!isJsxNode(jsxNode)) {
-      return [document.createTextNode(String(jsxNode))]
+      const node = document.createTextNode(String(jsxNode))
+      parentDom.appendChild(node)
+      return [node]
     }
     // 自定义组件
-    else if (typeof jsxNode.type !== "string") {
-      return (await createInstance(jsxNode)).$.doms
+    else if (isComponent(jsxNode)) {
+      return [await createInstance(jsxNode, parentDom, instance)]
     } else {
       // 原生html标签
-      const realDom = document.createElement(jsxNode.type);
+      const realDom = document.createElement(jsxNode.type as string);
       for (const prop in jsxNode.props) {
         const contProps = ["children"];
         if (contProps.includes(prop)) {
@@ -54,31 +58,32 @@ export async function createRealDomByJsx(jsxNode: JsxNode): Promise<RealDom[]> {
       if ("children" in jsxNode.props) {
         if (Array.isArray(jsxNode.props.children)) {
           for (const child of jsxNode.props.children) {
-            let childrens: RealDom[] = []
-            if (Array.isArray(child)) {
-              childrens = await Promise.all(child.map(item => createRealDomByJsx(item))).then(res => {
-                return res.reduce((pre, cur) => pre.concat(cur))
-              })
-            } else {
-              childrens = await createRealDomByJsx(child)
-            }
-            childrens.forEach(item => {
-              realDom.append(item)
-            })
+            appendRealDomByJsxNode(child, realDom, instance)
           }
         } else {
-          realDom.append((await createRealDomByJsx(jsxNode.props.children))[0]);
+          appendRealDomByJsxNode(jsxNode.props.children, realDom, instance)
         }
       }
-      return [realDom];
+      parentDom.appendChild(realDom);
+      return [realDom]
     }
   }
 }
 
 
 export class Instance$ {
+  constructor(parentDom: HTMLElement, jsxNode: JsxNode, instance: Instance, parentInstance: Instance) {
+    this.parentDom = parentDom
+    this.jsxNode = jsxNode
+    this.instance = instance
+    this.parentInstance = parentInstance
+  }
   key: string = uuidv4()
-  doms: RealDom[] = []
+  instance: Instance
+  parentInstance: Instance
+  jsxNode: JsxNode
+  parentDom: HTMLElement
+  doms: Array<RealDom | Instance> = []
   life: LIFE = LIFE.create
   createdLifeHandles: Function[] = []
   useCreated(fun: Function): void {
@@ -115,29 +120,36 @@ export class Instance$ {
         if (!this.render) {
           return
         }
-        const jsxNode = this.render();
-        console.log(jsxNode)
-        const realDoms = await createRealDomByJsx(jsxNode);
-        // TODO 优化替换逻辑
-        this.doms.forEach((dom, i) => {
-          try {
-            dom.parentElement?.replaceChild(realDoms[i], dom)
-          } catch (err) { }
-        })
-        this.doms = realDoms;
-        this.life = LIFE.mounted;
-        this.renderTask = null;
-        resolve();
+        const childJsxNodes = this.render();
+        if (this.life >= LIFE.mounted) {
+          this.life = LIFE.update
+          this.updateDom().then(() => {
+            this.life = LIFE.mounted;
+            this.renderTask = null;
+            resolve();
+          })
+        } else {
+          this.doms = await appendRealDomByJsxNode(childJsxNodes, this.parentDom, this.instance);
+          this.life = LIFE.mounted;
+          this.renderTask = null;
+          resolve();
+        }
       });
     });
     return this.renderTask;
   }
-  refs: {[name: string]: Instance} = {}
+  updateDom(): Promise<void> {
+    return Promise.resolve()
+  }
+  refs: { [name: string]: Instance } = {}
 }
 
 export class Instance {
+  constructor(parentDom: HTMLElement, jsxNode: JsxNode, parentInstance?: Instance) {
+    this.$ = new Instance$(parentDom, jsxNode, this, parentInstance)
+  }
   [name: string | symbol]: unknown
-  $: Instance$ = new Instance$()
+  $: Instance$
 }
 
 export function getProxy(instance: Instance) {

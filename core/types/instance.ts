@@ -10,7 +10,8 @@ export type Component = (props?: unknown) => JsxNode
 export enum LIFE {
   create = 0,
   created = 1,
-  mounted = 2
+  mounted = 2,
+  update = 3
 };
 
 export type RealDom = HTMLElement | Text
