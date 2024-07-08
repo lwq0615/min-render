@@ -1,5 +1,4 @@
-import { Instance, RealDomInstance } from "@core/Instance";
-import { JsxNode, RealDom } from "@core/types/instance";
+import { JsxNode } from "@core/types/instance";
 
 
 const REACT_ELEMENT_TYPE = Symbol.for("react.element");
