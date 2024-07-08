@@ -1,7 +1,7 @@
 import { renderRoot } from "../core";
 
 function Test2(props: any) {
-  return <span>{props.children}</span>;
+  return <div>{props.children}</div>;
 }
 
 function Test() {
@@ -12,12 +12,10 @@ function Test() {
     this.count++;
   });
   return (
-    <div>
-      <div>1</div>
-      <Test2>
-        123333
-        <div>123</div>
-      </Test2>
+    <div id="a1">
+      {/* <div id="a2">1</div> */}
+      <Test2>tet{this.count}</Test2>
+      <button onClick={() => this.count++}>+++</button>
     </div>
   );
 }

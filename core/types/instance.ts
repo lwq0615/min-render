@@ -7,10 +7,13 @@ export type JsxType = string | Component | symbol
 
 export type JsxNode = {
   type: JsxType,
-  props?: { [key: string]: any, children?: JsxNode[] | JsxNode }
+  ref?: string,
+  key?: string,
+  children?: JsxNode[] | JsxNode,
+  props?: { [key: string]: any, children?: JsxNode[] | JsxNode | string}
 }
 
-export type Component = (props?: unknown) => Array<JsxNode | string> | JsxNode | string
+export type Component = (props?: unknown) => JsxNode | string
 
 
 export enum LIFE {

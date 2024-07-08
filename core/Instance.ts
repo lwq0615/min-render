@@ -13,16 +13,8 @@ import {
   isJsxNode,
   isFragmentJsxNode,
   isComponent,
+  concatArray,
 } from "./utils";
-
-function getDiffKey(jsxNode: JsxNode | string) {
-  if (isJsxNode(jsxNode)) {
-    return JSON.stringify(jsxNode);
-  } else {
-    return String(jsxNode);
-  }
-}
-
 /**
  * 创建组件实例
  * @param jsxNode 组件jsx节点
@@ -39,6 +31,7 @@ export function createInstance(
     const proxy = getProxy(instance);
     const render = (jsxNode.type as Component).bind(proxy, jsxNode.props);
     instance.$.setRender(render);
+    instance.$.setProxy(proxy);
     render();
     instance.$.invokeCreatedLifeHandles();
     instance.$.renderDom().then(() => {
@@ -139,6 +132,27 @@ export async function appendRealDomByJsxNode(
   return res;
 }
 
+function getDiffKey(jsxNode: JsxNode | string) {
+  if (isJsxNode(jsxNode) && typeof jsxNode !== "string") {
+    const props: { [key: string]: any } = {}
+    Object.keys(jsxNode.props || {}).forEach(key => {
+      if (key === 'children') {
+        return
+      }
+      props[key] = jsxNode.props[key]
+    })
+    const diffObj = {
+      ref: jsxNode.ref,
+      key: jsxNode.key,
+      props
+    }
+    return JSON.stringify(diffObj);
+  } else {
+    return String(jsxNode);
+  }
+}
+
+
 // html标签 & 自定义组件 虚拟dom公用api
 class BaseInstance {
   constructor(
@@ -157,7 +171,7 @@ class BaseInstance {
   parentInstance: Instance;
   childrens: Array<InstanceType> = [];
   getRealDoms(): RealDom[] {
-    if (this instanceof RealDomInstance) {
+    if (this instanceof RealDomInstance$) {
       return [this.dom];
     } else {
       return this.getRealChildDoms();
@@ -171,68 +185,93 @@ class BaseInstance {
           realDoms.push(dom);
         }
       } else {
-        realDoms.push(instance.dom);
+        realDoms.push(instance.$.dom);
       }
     });
     return realDoms;
   }
-  updateChildren(
+  async updateChildren(
     newJsxNodes: Array<JsxNode | string>
   ): Promise<Array<InstanceType>> {
+    const childrens: Array<InstanceType> = []
     for (const dom of this.getRealChildDoms()) {
       dom.remove();
     }
+    let parentDom = this.parentDom
+    if (this instanceof RealDomInstance$) {
+      parentDom = (this as unknown as RealDomInstance$).dom
+    }
     for (const jsxNode of newJsxNodes) {
       // 有可重复使用的相同节点
-      const sameNode = this.childrens.find((instance) => {
-        if (instance instanceof Instance) {
-          return instance.$.equals(jsxNode);
-        } else {
-          return instance.equals(jsxNode);
-        }
-      }) as BaseInstance;
+      const sameNode: InstanceType = this.childrens.find((instance) => instance.$.equals(jsxNode));
       if (sameNode) {
-        if (isJsxNode(jsxNode) && typeof jsxNode !== "string") {
+        if (isJsxNode(sameNode.$.jsxNode) && typeof jsxNode !== "string") {
           let childrenJsxs = jsxNode.props.children;
+          if(jsxNode instanceof Instance) {
+            const render = (jsxNode.type as Component).bind((sameNode.$ as Instance$).proxy, jsxNode.props);
+            childrenJsxs = render()
+          }
           if (!Array.isArray(childrenJsxs)) {
-            childrenJsxs = [childrenJsxs];
+            childrenJsxs = [childrenJsxs as JsxNode];
           }
-          if(sameNode instanceof Instance) {
-            sameNode.$.updateChildren(childrenJsxs);
-          }else {
-            sameNode.updateChildren(childrenJsxs);
-          }
+          sameNode.$.updateChildren(childrenJsxs);
         }
-        sameNode.getRealDoms().forEach((dom) => {
-          this.parentDom.appendChild(dom);
-        });
+        for (const item of sameNode.$.getRealDoms()) {
+          parentDom.appendChild(item);
+        }
+        childrens.push(sameNode)
+      } else {
+        concatArray(childrens, await appendRealDomByJsxNode(jsxNode, parentDom, this.parentInstance))
       }
     }
-    return Promise.resolve();
+    this.childrens = childrens
+    return childrens
   }
   getJsxType(jsxNode: JsxNode | string) {
     return isJsxNode(jsxNode) ? (jsxNode as JsxNode).type : JSX_TEXT_TYPE;
   }
   equals(jsxNode: JsxNode | string) {
-    if (isJsxNode(jsxNode) && typeof jsxNode !== "string") {
+    if (typeof jsxNode === "string" && typeof this.jsxNode === "string") {
+      return this.key === getDiffKey(jsxNode);
+    } else if (isJsxNode(jsxNode) && typeof jsxNode !== "string" && isJsxNode(this.jsxNode) && typeof this.jsxNode !== "string") {
       return (
         this.getJsxType(jsxNode) === this.getJsxType(this.jsxNode) &&
-        this.key === getDiffKey(jsxNode)
+        this.key === getDiffKey(jsxNode) && jsxNode.type === this.jsxNode.type
       );
-    } else {
-      return this.key === getDiffKey(jsxNode);
+    }else {
+      return false
     }
   }
 }
 
 // html标签虚拟dom
-export class RealDomInstance extends BaseInstance {
+export class RealDomInstance {
   constructor(
     dom: RealDom,
     parentDom: RealDom,
     parentInstance: Instance,
     jsxNode: JsxNode | string,
-    childrens?: Array<InstanceType>
+    childrens: Array<InstanceType> = []
+  ) {
+    this.$ = new RealDomInstance$(
+      dom,
+      parentDom,
+      parentInstance,
+      jsxNode,
+      childrens
+    )
+  }
+  $: RealDomInstance$
+}
+
+
+class RealDomInstance$ extends BaseInstance {
+  constructor(
+    dom: RealDom,
+    parentDom: RealDom,
+    parentInstance: Instance,
+    jsxNode: JsxNode | string,
+    childrens: Array<InstanceType> = []
   ) {
     super(jsxNode, parentDom, parentInstance);
     this.dom = dom;
@@ -263,6 +302,10 @@ export class Instance$ extends BaseInstance {
   instance: Instance;
   life: LIFE = LIFE.create;
   createdLifeHandles: Function[] = [];
+  proxy: Instance
+  setProxy(proxy: Instance) {
+    this.proxy = proxy
+  }
   useCreated(fun: Function): void {
     this.createdLifeHandles.push(fun);
   }
@@ -283,7 +326,7 @@ export class Instance$ extends BaseInstance {
       fun();
     });
   }
-  render: void | Component;
+  render: Component;
   renderTask: void | Promise<void>;
   setRender(render: Component) {
     this.render = render;
@@ -297,10 +340,7 @@ export class Instance$ extends BaseInstance {
         if (!this.render) {
           return;
         }
-        let childJsxNode = this.render();
-        if (!Array.isArray(childJsxNode)) {
-          childJsxNode = [childJsxNode];
-        }
+        const childJsxNode = [this.render()];
         if (this.life >= LIFE.mounted) {
           this.life = LIFE.update;
           this.updateChildren(childJsxNode).then(() => {
@@ -327,7 +367,7 @@ export class Instance$ extends BaseInstance {
       if (instance instanceof Instance) {
         instance.$.destroyDom();
       } else {
-        instance.dom.remove();
+        instance.$.dom.remove();
       }
     }
     this.childrens = [];
