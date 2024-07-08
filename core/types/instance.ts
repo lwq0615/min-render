@@ -4,7 +4,7 @@ export type JsxNode = {
   props?: { [key: string]: any, children?: JsxNode[] | JsxNode }
 }
 
-export type Component = (props?: unknown) => JsxNode
+export type Component = (props?: unknown) => JsxNode | string
 
 
 export enum LIFE {
