@@ -156,11 +156,18 @@ class BaseInstance {
   parentDom: RealDom;
   parentInstance: Instance;
   childrens: Array<InstanceType> = [];
-  getRealDoms(): Array<RealDom> {
+  getRealDoms(): RealDom[] {
+    if (this instanceof RealDomInstance) {
+      return [this.dom];
+    } else {
+      return this.getRealChildDoms();
+    }
+  }
+  getRealChildDoms(): Array<RealDom> {
     const realDoms: RealDom[] = [];
     this.childrens.map((instance) => {
       if (instance instanceof Instance) {
-        for (const dom of instance.$.getRealDoms()) {
+        for (const dom of instance.$.getRealChildDoms()) {
           realDoms.push(dom);
         }
       } else {
@@ -172,16 +179,35 @@ class BaseInstance {
   updateChildren(
     newJsxNodes: Array<JsxNode | string>
   ): Promise<Array<InstanceType>> {
-    const currentJsxNodes = this.childrens.map((item) => {
-      if (item instanceof Instance) {
-        return item.$.jsxNode;
-      } else {
-        return item.jsxNode;
+    for (const dom of this.getRealChildDoms()) {
+      dom.remove();
+    }
+    for (const jsxNode of newJsxNodes) {
+      // 有可重复使用的相同节点
+      const sameNode = this.childrens.find((instance) => {
+        if (instance instanceof Instance) {
+          return instance.$.equals(jsxNode);
+        } else {
+          return instance.equals(jsxNode);
+        }
+      }) as BaseInstance;
+      if (sameNode) {
+        if (isJsxNode(jsxNode) && typeof jsxNode !== "string") {
+          let childrenJsxs = jsxNode.props.children;
+          if (!Array.isArray(childrenJsxs)) {
+            childrenJsxs = [childrenJsxs];
+          }
+          if(sameNode instanceof Instance) {
+            sameNode.$.updateChildren(childrenJsxs);
+          }else {
+            sameNode.updateChildren(childrenJsxs);
+          }
+        }
+        sameNode.getRealDoms().forEach((dom) => {
+          this.parentDom.appendChild(dom);
+        });
       }
-    });
-    // for (const dom of this.getRealDoms()) {
-    //   dom.remove();
-    // }
+    }
     return Promise.resolve();
   }
   getJsxType(jsxNode: JsxNode | string) {
