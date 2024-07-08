@@ -12,7 +12,13 @@ function Test() {
     this.count++;
   });
   return (
-    1
+    <div>
+      <div>1</div>
+      <Test2>
+        123333
+        <div>123</div>
+      </Test2>
+    </div>
   );
 }
 

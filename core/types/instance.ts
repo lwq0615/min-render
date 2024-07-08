@@ -1,10 +1,16 @@
+import { Instance, RealDomInstance } from "@core/Instance"
+
+
+export const JSX_TEXT_TYPE = Symbol.for('jsx.text.type')
+
+export type JsxType = string | Component | symbol
 
 export type JsxNode = {
-  type: string | Component | symbol,
+  type: JsxType,
   props?: { [key: string]: any, children?: JsxNode[] | JsxNode }
 }
 
-export type Component = (props?: unknown) => JsxNode | string
+export type Component = (props?: unknown) => Array<JsxNode | string> | JsxNode | string
 
 
 export enum LIFE {
@@ -16,19 +22,4 @@ export enum LIFE {
 
 export type RealDom = HTMLElement | Text
 
-
-export type Instance$ = {
-  key: string,
-  dom: RealDom,
-  life: LIFE,
-  createdLifeHandles: Function[],
-  useCreated(fun: Function): void,
-  invokeCreatedLifeHandles(): void,
-  mountedLifeHandles: Function[],
-  useMounted(fun: Function): void,
-  invokeMountedLifeHandles(): void,
-  render: void | Component,
-  renderTask: void | Promise<void>,
-  setRender(render: Component): void,
-  renderDom(): Promise<void>
-}
+export type InstanceType = RealDomInstance | Instance
