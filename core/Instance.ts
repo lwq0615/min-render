@@ -23,19 +23,9 @@ export function createInstance(
   return new Promise((resolve) => {
     const instance = new Instance(parentDom, jsxNode, parentInstance);
     const proxy = getProxy(instance);
-    const render = () => {
-      const childJsxNode = (jsxNode.type as Component).call(
-        proxy,
-        jsxNode.props
-      );
-      if (!isJsxNode(childJsxNode)) {
-        return String(childJsxNode);
-      }
-      return childJsxNode;
-    };
-    instance.$.setRender(render);
+    instance.$.setRender(jsxNode, proxy);
     instance.$.setProxy(proxy);
-    render();
+    instance.$.render();
     instance.$.invokeCreatedLifeHandles();
     instance.$.renderDom().then(() => {
       instance.$.invokeMountedLifeHandles();
@@ -91,6 +81,7 @@ export function createRealDomInstance(
           );
         }
       }
+      parentDom.appendChild(realDom)
       instance.$.dom = realDom;
       instance.$.childrens = childrens;
       resolve(instance);
@@ -140,17 +131,17 @@ class BaseInstance {
     }
   }
   sameProps(jsxNode: JsxNode) {
-    const props: {[name: string]: any} = {}
-    Object.keys(jsxNode.props).map(key => {
-      if(key !== "children") {
-        props[key] = jsxNode.props[key]
+    const props: { [name: string]: any } = {};
+    Object.keys(jsxNode.props).map((key) => {
+      if (key !== "children") {
+        props[key] = jsxNode.props[key];
       }
-    })
+    });
     function getDiffObj(jsxNode: JsxNode) {
       return JSON.stringify({
         props,
-        ref: jsxNode.ref
-      })
+        ref: jsxNode.ref,
+      });
     }
     return getDiffObj(jsxNode) === getDiffObj(this.jsxNode as JsxNode);
   }
@@ -192,17 +183,19 @@ class BaseInstance {
     }
     this.childrens = [];
   }
-  reRenderProps(newJsxNode: JsxNode) {
+  async reRenderProps(newJsxNode: JsxNode) {
     if (typeof this.jsxNode === "string") {
       return;
     }
     this.jsxNode = newJsxNode;
     if (this instanceof Instance$) {
-      this.renderDom();
-    } else {
-      if(this.sameProps(newJsxNode)) {
-        this.reRenderChildren(newJsxNode.props.children)
-      }else {
+      this.setRender(newJsxNode, this.proxy);
+      await this.renderDom();
+    } else if(this instanceof RealDomInstance$) {
+      if (this.sameProps(newJsxNode)) {
+        this.reRenderChildren(newJsxNode.props.children);
+        this.parentDom.appendChild(this.dom)
+      } else {
         // TODO
       }
     }
@@ -228,10 +221,11 @@ class BaseInstance {
       if (sameNode) {
         // 该节点属性发生了改变，重新渲染
         if (!sameNode.$.equals(jsxNode)) {
-          sameNode.$.reRenderProps(jsxNode as JsxNode);
-        }
-        for (const item of sameNode.$.getRealDoms()) {
-          parentDom.appendChild(item);
+          await sameNode.$.reRenderProps(jsxNode as JsxNode);
+        }else {
+          for (const item of sameNode.$.getRealDoms()) {
+            parentDom.appendChild(item);
+          }
         }
       } else {
         await appendRealDomByJsxNode(
@@ -317,8 +311,17 @@ export class Instance$ extends BaseInstance {
     });
   }
   render: Component;
-  setRender(render: Component) {
-    this.render = render;
+  setRender(jsxNode: JsxNode, proxy: Instance) {
+    this.render = () => {
+      const childJsxNode = (jsxNode.type as Component).call(
+        proxy,
+        jsxNode.props
+      );
+      if (!isJsxNode(childJsxNode)) {
+        return String(childJsxNode);
+      }
+      return childJsxNode;
+    };
   }
   refs: { [name: string]: Instance } = {};
   renderDom(): Promise<void> {

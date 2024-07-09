@@ -26,7 +26,6 @@ export async function appendRealDomByJsxNode(
 ): Promise<Array<InstanceType>> {
   if (typeof jsxNode === "string" || !isJsxNode(jsxNode)) {
     // 返回的不是jsx
-    const node = document.createTextNode(String(jsxNode));
     return [await createRealDomInstance(jsxNode, parentDom, instance)];
   }
   // 返回jsx是多节点
