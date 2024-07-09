@@ -29,8 +29,8 @@ export function isJsxNode(obj: any) {
 }
 
 // 判断是否多节点的jsx
-export function isFragmentJsxNode(obj: JsxNode) {
-  return isJsxNode(obj) && obj.type === REACT_FRAGMENT_TYPE
+export function isFragmentJsxNode(obj: JsxNode | string) {
+  return isJsxNode(obj) && typeof obj !== 'string' && obj.type === REACT_FRAGMENT_TYPE
 }
 
 // 判断是否是一个jsx组件节点

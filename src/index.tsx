@@ -12,6 +12,7 @@ function Test() {
     this.count++;
   });
   return (
+    <>
     <div id="a1">
       <div><span>{this.count}</span></div>
       {
@@ -22,6 +23,7 @@ function Test() {
         this.count % 2 == 0 && <div>333</div>
       }
     </div>
+    </>
   );
 }
 

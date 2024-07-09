@@ -6,7 +6,7 @@ import {
   LIFE,
   RealDom,
 } from "./types/instance";
-import { getListenerName, isJsxNode, isListener } from "./utils";
+import { getListenerName, isFragmentJsxNode, isJsxNode, isListener } from "./utils";
 import { appendRealDomByJsxNode } from "./utils/dom";
 
 /**
@@ -37,14 +37,14 @@ export function createInstance(
 export function createRealDomInstance(
   jsxNode: JsxNode | string,
   parentDom: RealDom,
-  parentInstance?: Instance
+  parentInstance: Instance
 ): Promise<RealDomInstance> {
   return new Promise(async (resolve) => {
     const instance = new RealDomInstance(parentDom, jsxNode, parentInstance);
     const isTop = parentInstance.$.parentDom === parentDom
     if (!isJsxNode(jsxNode)) {
       const node = document.createTextNode(String(jsxNode));
-      if(!isTop) {
+      if (!isTop) {
         parentDom.appendChild(node);
       }
       instance.$.dom = node;
@@ -84,7 +84,7 @@ export function createRealDomInstance(
           );
         }
       }
-      if(!isTop) {
+      if (!isTop) {
         parentDom.appendChild(realDom);
       }
       instance.$.dom = realDom;
@@ -208,9 +208,21 @@ class BaseInstance {
     newJsxNodes: Array<JsxNode | string> | JsxNode | string
   ): Promise<void> {
     const children: InstanceType[] = [];
-    if (!Array.isArray(newJsxNodes)) {
-      newJsxNodes = [newJsxNodes];
+    function fragmentJsxNodeTran(arr: Array<JsxNode | string> | JsxNode | string): Array<JsxNode | string> {
+      const res = []
+      if(!Array.isArray(arr)) {
+        arr = [arr]
+      }
+      for (const item of arr) {
+        if(isFragmentJsxNode(item)) {
+          res.push(...fragmentJsxNodeTran((item as JsxNode).props.children))
+        }else {
+          res.push(item)
+        }
+      }
+      return res
     }
+    newJsxNodes = fragmentJsxNodeTran(newJsxNodes)
     let parentDom = this.parentDom;
     if (this instanceof RealDomInstance$) {
       parentDom = (this as unknown as RealDomInstance$).dom;
@@ -241,18 +253,18 @@ class BaseInstance {
     const doms = children.map(item => item.$.getRealDoms()).reduce((pre, cur) => pre.concat(cur), []);
     // 开始diff，卸载不可复用的节点
     for (const dom of this.getRealChildDoms()) {
-      if(!doms.includes(dom)) {
+      if (!doms.includes(dom)) {
         dom.remove()
       }
     }
     // 排列插入新的节点
     doms.forEach((dom, i) => {
       // 不存在该元素
-      if([...parentDom.childNodes].indexOf(dom) === -1) {
+      if ([...parentDom.childNodes].indexOf(dom) === -1) {
         parentDom.insertBefore(dom, parentDom.childNodes[i])
       }
       // 存在但是位置不对
-      else if([...parentDom.childNodes].indexOf(dom) != i) {
+      else if ([...parentDom.childNodes].indexOf(dom) != i) {
         parentDom.insertBefore(dom, parentDom.childNodes[i])
       }
     })
@@ -375,7 +387,7 @@ export class Instance$ extends BaseInstance {
             this.instance as Instance
           );
           // 第一次渲染的时候直接插入dom树
-          if(this.life <= LIFE.created) {
+          if (this.life <= LIFE.created) {
             this.appendDomToParentDom();
           }
           this.life = LIFE.mounted;
