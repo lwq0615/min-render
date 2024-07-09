@@ -6,7 +6,7 @@ import {
   LIFE,
   RealDom,
 } from "./types/instance";
-import { getListenerName, isJsxNode, isListener } from "./utils";
+import { concatArray, getListenerName, isJsxNode, isListener } from "./utils";
 import { appendRealDomByJsxNode } from "./utils/dom";
 
 /**
@@ -81,7 +81,7 @@ export function createRealDomInstance(
           );
         }
       }
-      parentDom.appendChild(realDom)
+      parentDom.appendChild(realDom);
       instance.$.dom = realDom;
       instance.$.childrens = childrens;
       resolve(instance);
@@ -191,10 +191,10 @@ class BaseInstance {
     if (this instanceof Instance$) {
       this.setRender(newJsxNode, this.proxy);
       await this.renderDom();
-    } else if(this instanceof RealDomInstance$) {
+    } else if (this instanceof RealDomInstance$) {
       if (this.sameProps(newJsxNode)) {
         this.reRenderChildren(newJsxNode.props.children);
-        this.parentDom.appendChild(this.dom)
+        this.parentDom.appendChild(this.dom);
       } else {
         // TODO
       }
@@ -203,6 +203,7 @@ class BaseInstance {
   async reRenderChildren(
     newJsxNodes: Array<JsxNode | string> | JsxNode | string
   ): Promise<void> {
+    const children: InstanceType[] = [];
     if (!Array.isArray(newJsxNodes)) {
       newJsxNodes = [newJsxNodes];
     }
@@ -215,26 +216,30 @@ class BaseInstance {
     }
     for (const jsxNode of newJsxNodes) {
       // 有可重复使用的相同标签&&key节点
-      const sameNode: InstanceType = this.childrens.find((instance) =>
-        instance.$.sameTypeAndKey(jsxNode)
-      );
+      const sameNode: InstanceType = this.childrens.find((instance) => {
+        return instance.$.sameTypeAndKey(jsxNode);
+      });
       if (sameNode) {
         // 该节点属性发生了改变，重新渲染
         if (!sameNode.$.equals(jsxNode)) {
           await sameNode.$.reRenderProps(jsxNode as JsxNode);
-        }else {
+        } else {
           for (const item of sameNode.$.getRealDoms()) {
             parentDom.appendChild(item);
           }
         }
+        children.push(sameNode);
       } else {
-        await appendRealDomByJsxNode(
-          jsxNode,
-          parentDom,
-          this instanceof Instance ? this : this.parentInstance
+        children.push(
+          ...(await appendRealDomByJsxNode(
+            jsxNode,
+            parentDom,
+            this instanceof Instance ? this : this.parentInstance
+          ))
         );
       }
     }
+    this.childrens = children;
   }
 }
 

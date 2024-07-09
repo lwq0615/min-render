@@ -37,7 +37,3 @@ export function isFragmentJsxNode(obj: JsxNode) {
 export function isComponent(obj: JsxNode) {
   return typeof obj.type  !== 'string' && typeof obj.type !== 'symbol'
 }
-
-export function concatArray(...lists: Array<Array<any>>) {
-  return lists.length > 1 ? lists.reduce((pre, cur) => pre.concat(cur), []) : lists[0]
-}
