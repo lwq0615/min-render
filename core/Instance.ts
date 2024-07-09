@@ -142,6 +142,9 @@ class BaseInstance {
     this.jsxNode = jsxNode;
     this.parentDom = parentDom;
     this.parentInstance = parentInstance;
+    if(typeof jsxNode !== 'string') {
+      this.key = jsxNode.key;
+    }
   }
   key: string;
   jsxNode: JsxNode | string;
@@ -168,13 +171,64 @@ class BaseInstance {
     });
     return realDoms;
   }
-  async updateChildren(
+  renderTask: Promise<void>;
+  renderDom(): Promise<void> {
+    if (this.renderTask) {
+      return;
+    }
+    this.renderTask = new Promise<void>((resolve) => {
+      Promise.resolve().then(async () => {
+        if (this instanceof Instance$) {
+          if (!this.render) {
+            return;
+          }
+          const childJsxNode = this.render();
+          if (this.life >= LIFE.mounted) {
+            this.life = LIFE.update;
+            this.reRenderChildren(childJsxNode).then(() => {
+              this.life = LIFE.mounted;
+              this.renderTask = null;
+              resolve();
+            });
+          } else {
+            this.childrens = await appendRealDomByJsxNode(
+              childJsxNode,
+              this.parentDom,
+              this.instance
+            );
+            this.life = LIFE.mounted;
+            this.renderTask = null;
+            resolve();
+          }
+        } else if (this instanceof RealDomInstance$) {
+        }
+      });
+    });
+    return this.renderTask;
+  }
+  destroyDom() {
+    for (const instance of this.childrens) {
+      if (instance instanceof Instance) {
+        instance.$.destroyDom();
+      } else {
+        instance.$.dom.remove();
+      }
+    }
+    this.childrens = [];
+  }
+  reRenderProps(newJsxNode: JsxNode) {
+    if (typeof this.jsxNode === "string") {
+      return;
+    }
+    this.jsxNode = newJsxNode
+    this.renderDom();
+  }
+  async reRenderChildren(
     newJsxNodes: Array<JsxNode | string> | JsxNode | string
-  ): Promise<Array<InstanceType>> {
+  ): Promise<void> {
     if (!Array.isArray(newJsxNodes)) {
       newJsxNodes = [newJsxNodes];
     }
-    const childrens: Array<InstanceType> = [];
     for (const dom of this.getRealChildDoms()) {
       dom.remove();
     }
@@ -183,41 +237,31 @@ class BaseInstance {
       parentDom = (this as unknown as RealDomInstance$).dom;
     }
     for (const jsxNode of newJsxNodes) {
-      // 有可重复使用的相同节点
+      // 有可重复使用的相同标签&&key节点
       const sameNode: InstanceType = this.childrens.find((instance) =>
-        instance.$.equals(jsxNode)
+        instance.$.sameTypeAndKey(jsxNode)
       );
       if (sameNode) {
-        if (isJsxNode(sameNode.$.jsxNode) && typeof jsxNode !== "string") {
-          let childrenJsxs: JsxNode[] = jsxNode.props.children as JsxNode[];
-          if (sameNode instanceof Instance) {
-            childrenJsxs = sameNode.$.childrens[0].$.childrens.map(
-              (item) => item.$.jsxNode
-            ) as JsxNode[];
-          }
-          if (!Array.isArray(childrenJsxs)) {
-            childrenJsxs = [childrenJsxs as JsxNode];
-          }
-          sameNode.$.updateChildren(childrenJsxs);
+        // 该节点属性发生了改变，重新渲染
+        if (!sameNode.$.equals(jsxNode)) {
+          this.reRenderProps(jsxNode as JsxNode);
         }
         for (const item of sameNode.$.getRealDoms()) {
           parentDom.appendChild(item);
         }
-        childrens.push(sameNode);
       } else {
-        concatArray(
-          childrens,
-          await appendRealDomByJsxNode(jsxNode, parentDom, this.parentInstance)
+        await appendRealDomByJsxNode(
+          jsxNode,
+          parentDom,
+          this instanceof Instance ? this : this.parentInstance
         );
       }
     }
-    this.childrens = childrens;
-    return childrens;
   }
   getJsxType(jsxNode: JsxNode | string) {
     return isJsxNode(jsxNode) ? (jsxNode as JsxNode).type : JSX_TEXT_TYPE;
   }
-  equals(jsxNode: JsxNode | string) {
+  sameTypeAndKey(jsxNode: JsxNode | string) {
     if (typeof jsxNode === "string" && typeof this.jsxNode === "string") {
       return this.jsxNode === this.jsxNode;
     } else if (
@@ -233,6 +277,13 @@ class BaseInstance {
     } else {
       return false;
     }
+  }
+  equals(jsxNode: JsxNode | string) {
+    if (!this.sameTypeAndKey(jsxNode)) {
+      return false;
+    }
+    jsxNode = jsxNode as JsxNode;
+    return JSON.stringify(jsxNode) === JSON.stringify(this.jsxNode);
   }
 }
 
@@ -298,7 +349,9 @@ export class Instance$ extends BaseInstance {
     this.proxy = proxy;
   }
   useCreated(fun: Function): void {
-    this.createdLifeHandles.push(fun);
+    if (this.life === LIFE.create) {
+      this.createdLifeHandles.push(fun);
+    }
   }
   invokeCreatedLifeHandles(): void {
     this.createdLifeHandles.forEach((fun) => {
@@ -318,50 +371,8 @@ export class Instance$ extends BaseInstance {
     });
   }
   render: Component;
-  renderTask: void | Promise<void>;
   setRender(render: Component) {
     this.render = render;
-  }
-  renderDom(): Promise<void> {
-    if (this.renderTask) {
-      return;
-    }
-    this.renderTask = new Promise<void>((resolve) => {
-      Promise.resolve().then(async () => {
-        if (!this.render) {
-          return;
-        }
-        const childJsxNode = this.render();
-        if (this.life >= LIFE.mounted) {
-          this.life = LIFE.update;
-          this.updateChildren(childJsxNode).then(() => {
-            this.life = LIFE.mounted;
-            this.renderTask = null;
-            resolve();
-          });
-        } else {
-          this.childrens = await appendRealDomByJsxNode(
-            childJsxNode,
-            this.parentDom,
-            this.instance
-          );
-          this.life = LIFE.mounted;
-          this.renderTask = null;
-          resolve();
-        }
-      });
-    });
-    return this.renderTask;
-  }
-  destroyDom() {
-    for (const instance of this.childrens) {
-      if (instance instanceof Instance) {
-        instance.$.destroyDom();
-      } else {
-        instance.$.dom.remove();
-      }
-    }
-    this.childrens = [];
   }
   refs: { [name: string]: Instance } = {};
 }
@@ -384,7 +395,7 @@ export function getProxy(instance: Instance) {
         return true;
       }
       target[key] = value;
-      if (instance.$.life >= 2) {
+      if (instance.$.life >= LIFE.mounted) {
         // 设置响应式的值，并且生命周期在mounted后，重新渲染
         instance.$.renderDom();
       }

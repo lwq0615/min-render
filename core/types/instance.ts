@@ -9,7 +9,6 @@ export type JsxNode = {
   type: JsxType,
   ref?: string,
   key?: string,
-  children?: JsxNode[] | JsxNode,
   props?: { [key: string]: any, children?: JsxNode[] | JsxNode | string}
 }
 
@@ -19,8 +18,8 @@ export type Component = (props?: unknown) => JsxNode | string
 export enum LIFE {
   create = 0,
   created = 1,
-  mounted = 2,
-  update = 3
+  update = 2,
+  mounted = 3
 };
 
 export type RealDom = HTMLElement | Text
