@@ -6,7 +6,7 @@ import {
   LIFE,
   RealDom,
 } from "./types/instance";
-import { concatArray, getListenerName, isJsxNode, isListener } from "./utils";
+import { getListenerName, isJsxNode, isListener } from "./utils";
 import { appendRealDomByJsxNode } from "./utils/dom";
 
 /**
