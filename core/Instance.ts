@@ -41,9 +41,12 @@ export function createRealDomInstance(
 ): Promise<RealDomInstance> {
   return new Promise(async (resolve) => {
     const instance = new RealDomInstance(parentDom, jsxNode, parentInstance);
+    const isTop = parentInstance.$.parentDom === parentDom
     if (!isJsxNode(jsxNode)) {
       const node = document.createTextNode(String(jsxNode));
-      parentDom.appendChild(node);
+      if(!isTop) {
+        parentDom.appendChild(node);
+      }
       instance.$.dom = node;
       resolve(instance);
     } else {
@@ -81,7 +84,9 @@ export function createRealDomInstance(
           );
         }
       }
-      parentDom.appendChild(realDom);
+      if(!isTop) {
+        parentDom.appendChild(realDom);
+      }
       instance.$.dom = realDom;
       instance.$.childrens = childrens;
       resolve(instance);
@@ -194,9 +199,8 @@ class BaseInstance {
     } else if (this instanceof RealDomInstance$) {
       if (this.sameProps(newJsxNode)) {
         this.reRenderChildren(newJsxNode.props.children);
-        this.parentDom.appendChild(this.dom);
       } else {
-        // TODO
+        // TODO 重新设置变化的属性
       }
     }
   }
@@ -207,13 +211,11 @@ class BaseInstance {
     if (!Array.isArray(newJsxNodes)) {
       newJsxNodes = [newJsxNodes];
     }
-    for (const dom of this.getRealChildDoms()) {
-      dom.remove();
-    }
     let parentDom = this.parentDom;
     if (this instanceof RealDomInstance$) {
       parentDom = (this as unknown as RealDomInstance$).dom;
     }
+    // 准备新的节点
     for (const jsxNode of newJsxNodes) {
       // 有可重复使用的相同标签&&key节点
       const sameNode: InstanceType = this.childrens.find((instance) => {
@@ -223,10 +225,6 @@ class BaseInstance {
         // 该节点属性发生了改变，重新渲染
         if (!sameNode.$.equals(jsxNode)) {
           await sameNode.$.reRenderProps(jsxNode as JsxNode);
-        } else {
-          for (const item of sameNode.$.getRealDoms()) {
-            parentDom.appendChild(item);
-          }
         }
         children.push(sameNode);
       } else {
@@ -239,6 +237,24 @@ class BaseInstance {
         );
       }
     }
+    const doms = children.map(item => item.$.getRealDoms()).reduce((pre, cur) => pre.concat(cur), []);
+    // 开始diff，卸载不可复用的节点
+    for (const dom of this.getRealChildDoms()) {
+      if(!doms.includes(dom)) {
+        dom.remove()
+      }
+    }
+    // 排列插入新的节点
+    doms.forEach((dom, i) => {
+      // 不存在该元素
+      if([...parentDom.childNodes].indexOf(dom) === -1) {
+        parentDom.insertBefore(dom, parentDom.childNodes[i])
+      }
+      // 存在但是位置不对
+      else if([...parentDom.childNodes].indexOf(dom) != i) {
+        parentDom.insertBefore(dom, parentDom.childNodes[i])
+      }
+    })
     this.childrens = children;
   }
 }
@@ -329,6 +345,11 @@ export class Instance$ extends BaseInstance {
     };
   }
   refs: { [name: string]: Instance } = {};
+  appendDomToParentDom() {
+    for (const dom of this.getRealDoms()) {
+      this.parentDom.appendChild(dom);
+    }
+  }
   renderDom(): Promise<void> {
     if (this.renderTask) {
       return;
@@ -352,6 +373,10 @@ export class Instance$ extends BaseInstance {
             this.parentDom,
             this.instance as Instance
           );
+          // 第一次渲染的时候直接插入dom树
+          if(this.life <= LIFE.created) {
+            this.appendDomToParentDom();
+          }
           this.life = LIFE.mounted;
           this.renderTask = null;
           resolve();

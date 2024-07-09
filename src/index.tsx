@@ -13,8 +13,14 @@ function Test() {
   });
   return (
     <div id="a1">
-      {this.count}
+      <div><span>{this.count}</span></div>
+      {
+        this.count % 2 > 0 && <div>123</div>
+      }
       <button onClick={() => this.count++}>+++</button>
+      {
+        this.count % 2 == 0 && <div>333</div>
+      }
     </div>
   );
 }
