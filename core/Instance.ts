@@ -119,8 +119,8 @@ class BaseInstance {
     return isJsxNode(jsxNode) ? (jsxNode as JsxNode).type : JSX_TEXT_TYPE;
   }
   sameTypeAndKey(jsxNode: JsxNode | string) {
-    if (typeof jsxNode === "string" && typeof this.jsxNode === "string") {
-      return this.jsxNode === this.jsxNode;
+    if (!isJsxNode(jsxNode) && !isJsxNode(this.jsxNode)) {
+      return this.jsxNode === jsxNode;
     } else if (
       isJsxNode(jsxNode) &&
       typeof jsxNode !== "string" &&
@@ -218,10 +218,11 @@ class BaseInstance {
     // 准备新的节点
     for (const jsxNode of newJsxNodes) {
       // 有可重复使用的相同标签&&key节点
-      const sameNode: InstanceType = this.childrens.find((instance) => {
+      const index: number = this.childrens.findIndex((instance) => {
         return instance.$.sameTypeAndKey(jsxNode);
       });
-      if (sameNode) {
+      if (index !== -1) {
+        const sameNode: InstanceType = this.childrens.splice(index, 1)[0]
         // 该节点属性发生了改变，重新渲染
         if (!sameNode.$.equals(jsxNode)) {
           await sameNode.$.reRenderProps(jsxNode as JsxNode);
