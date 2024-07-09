@@ -13,7 +13,7 @@ function Test() {
   });
   return (
     <div id="a1">
-      {/* <div id="a2">1</div> */}
+      <div id="a2">1</div>
       <Test2>tet{this.count}</Test2>
       <button onClick={() => this.count++}>+++</button>
     </div>
