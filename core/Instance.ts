@@ -138,15 +138,14 @@ class BaseInstance {
     });
     return realDoms;
   }
-  renderTask: Promise<void>;
-  destroyDom() {
-    if (this instanceof Instance$) {
-      for (const instance of this.childrens) {
-        instance.$.destroyDom();
-        this.parentInstance.$.removeRef(this.instance);
-      }
-    } else if (this instanceof RealDomInstance$) {
+  destroyDom(isTop: boolean) {
+    this.parentInstance.$.removeRef(this.instance);
+    if (this instanceof RealDomInstance$ && isTop) {
       this.dom.remove();
+      isTop = false;
+    }
+    for (const instance of this.childrens) {
+      instance.$.destroyDom(isTop);
     }
     this.childrens = [];
   }
@@ -221,7 +220,7 @@ class BaseInstance {
     }
     // 卸载不需要的组件
     for (const item of this.childrens) {
-      item.$.destroyDom();
+      item.$.destroyDom(true);
     }
     const doms = children
       .map((item) => item.$.getRealDoms())
@@ -387,6 +386,11 @@ export class Instance$ extends BaseInstance {
       }
     }
   }
+  removeRef(instance: InstanceType) {
+    if (typeof instance.$.jsxNode !== "string" && instance.$.jsxNode?.ref) {
+      delete this.refs[instance.$.jsxNode.ref];
+    }
+  }
   expose: InstanceThis["expose"] = {};
   useExpose: InstanceThis["useExpose"] = function (expose) {
     if (Object.prototype.toString.call(expose) !== "[object Object]") {
@@ -395,16 +399,12 @@ export class Instance$ extends BaseInstance {
     Object.keys(this.expose).forEach((key) => delete this.expose[key]);
     Object.keys(expose).forEach((key) => (this.expose[key] = expose[key]));
   };
-  removeRef(instance: InstanceType) {
-    if (typeof instance.$.jsxNode !== "string" && instance.$.jsxNode?.ref) {
-      delete this.refs[instance.$.jsxNode.ref];
-    }
-  }
   appendDomToParentDom() {
     for (const dom of this.getRealDoms()) {
       this.parentDom.appendChild(dom);
     }
   }
+  renderTask: Promise<void>;
   renderDom(): Promise<void> {
     if (this.renderTask) {
       return;
