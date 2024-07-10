@@ -1,5 +1,5 @@
-import { Instance } from "@/instance/Instance"
-import { RealDomInstance } from "@/instance/RealDomInstance"
+import { Instance } from "../instance/Instance"
+import { RealDomInstance } from "../instance/RealDomInstance"
 
 
 export type JsxType = string | Component | symbol

@@ -2,9 +2,6 @@
   "exclude": ["node_modules/**"],
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["./core/*"]
-    },
     "outDir": "dist",
     "noImplicitAny": true, // 不允许隐式any类型
     "module": "CommonJS", // 模块引入方式
