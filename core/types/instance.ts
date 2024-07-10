@@ -18,7 +18,8 @@ export enum LIFE {
   create = 0,
   created = 1,
   update = 2,
-  mounted = 3
+  mounted = 3,
+  destroy = 4
 };
 
 export type RealDom = HTMLElement | Text 

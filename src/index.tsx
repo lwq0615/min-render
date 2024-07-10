@@ -23,25 +23,23 @@ function Test2(props: any) {
 
 function Test(props: any, that: This) {
   this.useCreated(() => {
-    this.count = 0;
+    // this.count = 0;
   });
   this.useMounted(() => {
-    this.count++;
+    this.count = 1;
   });
   return (
-    <>
-      <div id="a1" ref="a1">
-        {new Array(this.count).fill("").map((item, i) => (
+    <div id="a1" ref="a1">
+      {/* {new Array(this.count).fill("").map((item, i) => (
           <div key={i}>{i}</div>
         ))}
         <Test2 ref="t2">
           {this.count}
-        </Test2>
-        <button onClick={() => this.count++}>+++</button>
-        <button onClick={() => this.count--}>---</button>
-      </div>
-      <div>sss</div>
-    </>
+        </Test2> */}
+      {this.count}
+      <button onClick={() => this.count++}>+++</button>
+      <button onClick={() => this.count--}>---</button>
+    </div>
   );
 }
 

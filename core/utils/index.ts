@@ -37,3 +37,7 @@ export function isFragmentJsxNode(obj: JsxNode | string) {
 export function isComponent(obj: JsxNode) {
   return typeof obj.type  !== 'string' && typeof obj.type !== 'symbol'
 }
+
+export function isObject(obj: any) {
+  return Object.prototype.toString.call(obj) === "[object Object]"
+}

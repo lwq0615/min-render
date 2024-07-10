@@ -1,7 +1,7 @@
 import { Instance, Instance$ } from "./Instance";
 import { RealDomInstance$ } from "./RealDomInstance";
 import { appendRealDomByJsxNode } from "../dom";
-import { InstanceType, JsxNode, RealDom } from "../types/instance";
+import { InstanceType, JsxNode, LIFE, RealDom } from "../types/instance";
 import { isFragmentJsxNode, isJsxNode } from "../utils";
 
 // html标签 & 自定义组件 虚拟dom公用api
@@ -105,6 +105,9 @@ export class BaseInstance {
   // 销毁
   destroyDom(isTop: boolean) {
     this.parentInstance.$.removeRef(this.instance);
+    if(this instanceof Instance$) {
+      this.life = LIFE.destroy
+    }
     if (this instanceof RealDomInstance$ && isTop) {
       this.dom.remove();
       isTop = false;

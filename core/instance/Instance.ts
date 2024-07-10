@@ -6,9 +6,9 @@ import {
   LIFE,
   RealDom,
 } from "../types/instance";
-import { isJsxNode } from "../utils";
+import { isJsxNode, isObject } from "../utils";
 import { appendRealDomByJsxNode } from "../dom";
-import { getProxy } from "../proxy";
+import { callInstanceRenderEnd, callInstanceRenderStart, getProxy } from "../proxy";
 import { BaseInstance } from "./BaseInstance";
 import { RealDomInstance } from "./RealDomInstance";
 
@@ -83,12 +83,25 @@ export class Instance$ extends BaseInstance {
       fun();
     });
   }
+  unListenHandles: Function[] = [];
+  pushUnListenHandler(handle: Function) {
+    this.unListenHandles.push(handle);
+  }
+  invokeUnListenHandles(): void {
+    let handle = null
+    while(handle = this.unListenHandles.pop()) {
+      handle?.()
+    }
+  }
   render: Component = function () {
+    this.invokeUnListenHandles()
+    callInstanceRenderStart(this.instance)
     const childJsxNode = (this.jsxNode.type as Component).call(
       this.proxy,
       this.jsxNode.props,
       this.proxy
     );
+    callInstanceRenderEnd()
     if (!isJsxNode(childJsxNode)) {
       return String(childJsxNode);
     }
@@ -114,7 +127,7 @@ export class Instance$ extends BaseInstance {
   }
   expose: This["expose"] = {};
   useExpose: This["useExpose"] = function (expose) {
-    if (Object.prototype.toString.call(expose) !== "[object Object]") {
+    if (!isObject(expose)) {
       throw new Error("expose must be object");
     }
     Object.keys(this.expose).forEach((key) => delete this.expose[key]);
