@@ -31,7 +31,7 @@ function Test(props: any, that: Instance) {
   });
   return (
     <>
-      <div id="a1" ref="a1">
+      <div id="a1" ref="a1" count={this.count < 5 ? this.count : undefined}>
         {new Array(this.count).fill("").map((item, i) => (
           <div key={i}>{i}</div>
         ))}

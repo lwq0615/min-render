@@ -76,8 +76,8 @@ class BaseInstance {
   // 父组件实例（自定义组件）
   parentInstance: Instance;
   childrens: Array<InstanceType> = [];
-  getJsxType(jsxNode: JsxNode | string) {
-    return isJsxNode(jsxNode) ? (jsxNode as JsxNode).type : JSX_TEXT_TYPE;
+  getJsxRef(jsxNode: JsxNode | string) {
+    return isJsxNode(jsxNode) ? (jsxNode as JsxNode).ref : void 0;
   }
   sameTypeAndKey(jsxNode: JsxNode | string) {
     if (!isJsxNode(jsxNode) && !isJsxNode(this.jsxNode)) {
@@ -89,27 +89,34 @@ class BaseInstance {
       typeof this.jsxNode !== "string"
     ) {
       return (
-        this.getJsxType(jsxNode) === this.getJsxType(this.jsxNode) &&
-        this.key === jsxNode.key
+        jsxNode.type === this.jsxNode.type &&
+        this.key === jsxNode.key &&
+        jsxNode.ref === this.jsxNode.ref
       );
     } else {
       return false;
     }
   }
-  sameProps(jsxNode: JsxNode) {
-    const props: { [name: string]: any } = {};
-    Object.keys(jsxNode.props).map((key) => {
-      if (key !== "children") {
-        props[key] = jsxNode.props[key];
-      }
-    });
-    function getDiffObj(jsxNode: JsxNode) {
-      return JSON.stringify({
-        props,
-        ref: jsxNode.ref,
+  getDiffObj(newJsxNode: JsxNode) {
+    function getProps(jsxNode: JsxNode) {
+      const props: { [name: string]: any } = {};
+      Object.keys(jsxNode.props).map((key) => {
+        if (key !== "children") {
+          props[key] = jsxNode.props[key];
+        }
       });
+      return props;
     }
-    return getDiffObj(jsxNode) === getDiffObj(this.jsxNode as JsxNode);
+    const oldProps = getProps(this.jsxNode as JsxNode);
+    const newProps = getProps(newJsxNode);
+    const keys = new Set(Object.keys(oldProps).concat(Object.keys(newProps)))
+    const changeProps: { [name: string]: any } = {}
+    for (const key of keys) {
+      if(newProps[key] !== oldProps[key]) {
+        changeProps[key] = newProps[key]
+      }
+    }
+    return changeProps
   }
   equals(jsxNode: JsxNode | string) {
     if (!this.sameTypeAndKey(jsxNode)) {
@@ -153,15 +160,19 @@ class BaseInstance {
     if (typeof this.jsxNode === "string") {
       return;
     }
-    this.jsxNode = newJsxNode;
     if (this instanceof Instance$) {
+      this.jsxNode = newJsxNode;
       await this.renderDom();
     } else if (this instanceof RealDomInstance$) {
-      if (this.sameProps(newJsxNode)) {
-        await this.reRenderChildren(newJsxNode.props.children);
+      const diffProps = this.getDiffObj(newJsxNode)
+      if (!Object.keys(diffProps).length) {
+        this.jsxNode = newJsxNode;
       } else {
-        // TODO 重新设置变化的属性
+        // 重新设置变化的属性
+        this.jsxNode = newJsxNode;
+        this.setProps(diffProps)
       }
+      await this.reRenderChildren(newJsxNode.props.children);
     }
   }
   async reRenderChildren(
@@ -190,9 +201,9 @@ class BaseInstance {
     if (this instanceof RealDomInstance$) {
       parentDom = (this as unknown as RealDomInstance$).dom;
     }
-    let offset = 0
-    if(this instanceof Instance$) {
-      offset += [...parentDom.childNodes].indexOf(this.getRealDoms()[0])
+    let offset = 0;
+    if (this instanceof Instance$) {
+      offset += [...parentDom.childNodes].indexOf(this.getRealDoms()[0]);
     }
     const children: InstanceType[] = [];
     // 准备新的节点
@@ -230,11 +241,11 @@ class BaseInstance {
     doms.forEach((dom, i) => {
       // 不存在该元素
       if ([...parentDom.childNodes].indexOf(dom) === -1) {
-        parentDom.insertBefore(dom, parentDom.childNodes[i+offset]);
+        parentDom.insertBefore(dom, parentDom.childNodes[i + offset]);
       }
       // 存在但是位置不对
-      else if ([...parentDom.childNodes].indexOf(dom) != i+offset) {
-        parentDom.insertBefore(dom, parentDom.childNodes[i+offset]);
+      else if ([...parentDom.childNodes].indexOf(dom) != i + offset) {
+        parentDom.insertBefore(dom, parentDom.childNodes[i + offset]);
       }
     });
     this.childrens = children;
@@ -263,6 +274,26 @@ class RealDomInstance$ extends BaseInstance {
     super(jsxNode, parentDom, parentInstance, instance);
   }
   dom: RealDom;
+  setProps(props: { [prop: string]: any }) {
+    this.jsxNode = this.jsxNode as JsxNode;
+    for (const prop in props) {
+      const contProps = ["children"];
+      if (contProps.includes(prop)) {
+        continue;
+      }
+      const value = props[prop];
+      if (isListener(prop)) {
+        (this.dom as any)[getListenerName(prop)] = value;
+      } else {
+        this.dom = this.dom  as HTMLElement
+        if(props[prop] === void 0) {
+          this.dom.removeAttribute(prop)
+        }else {
+          this.dom.setAttribute(prop, props[prop])
+        }
+      }
+    }
+  }
   async renderDom(): Promise<void> {
     const isTop = this.parentInstance.$.parentDom === this.parentDom;
     if (!isJsxNode(this.jsxNode)) {
@@ -275,18 +306,6 @@ class RealDomInstance$ extends BaseInstance {
       this.jsxNode = this.jsxNode as JsxNode;
       // 原生html标签
       const realDom = document.createElement(this.jsxNode.type as string);
-      for (const prop in this.jsxNode.props) {
-        const contProps = ["children"];
-        if (contProps.includes(prop)) {
-          continue;
-        }
-        const value = this.jsxNode.props[prop];
-        if (isListener(prop)) {
-          (realDom as any)[getListenerName(prop)] = value;
-        } else {
-          realDom.setAttribute(prop, value);
-        }
-      }
       // 递归渲染子节点
       let childrens: Array<InstanceType> = [];
       if (this.jsxNode.props.children !== void 0) {
@@ -306,11 +325,12 @@ class RealDomInstance$ extends BaseInstance {
           );
         }
       }
+      this.dom = realDom;
+      this.setProps(this.jsxNode.props)
+      this.childrens = childrens;
       if (!isTop) {
         this.parentDom.appendChild(realDom);
       }
-      this.dom = realDom;
-      this.childrens = childrens;
       this.parentInstance.$.setRef(this.instance);
     }
   }
