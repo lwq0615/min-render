@@ -35,11 +35,9 @@ function Test(props: any, that: Instance) {
         {new Array(this.count).fill("").map((item, i) => (
           <div key={i}>{i}</div>
         ))}
-        {
-          this.count < 3 && <Test2 ref="t2">
-          <Test3 />
+        <Test2 ref="t2">
+          {this.count}
         </Test2>
-        }
         <button onClick={() => this.count++}>+++</button>
         <button onClick={() => this.count--}>---</button>
       </div>

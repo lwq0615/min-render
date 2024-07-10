@@ -70,15 +70,17 @@ class BaseInstance {
     }
   }
   key: string;
+  // 节点实例
   instance: InstanceType;
+  // 节点jsx
   jsxNode: JsxNode | string;
+  // 渲染的父dom
   parentDom: RealDom;
   // 父组件实例（自定义组件）
   parentInstance: Instance;
+  // 子节点列表
   childrens: Array<InstanceType> = [];
-  getJsxRef(jsxNode: JsxNode | string) {
-    return isJsxNode(jsxNode) ? (jsxNode as JsxNode).ref : void 0;
-  }
+  // 判断节点是否可以复用
   sameTypeAndKey(jsxNode: JsxNode | string) {
     if (!isJsxNode(jsxNode) && !isJsxNode(this.jsxNode)) {
       return this.jsxNode === jsxNode;
@@ -97,6 +99,7 @@ class BaseInstance {
       return false;
     }
   }
+  // 获取相对新的jsxNode需要改变的props
   getDiffObj(newJsxNode: JsxNode) {
     function getProps(jsxNode: JsxNode) {
       const props: { [name: string]: any } = {};
@@ -118,6 +121,7 @@ class BaseInstance {
     }
     return changeProps
   }
+  // 判断是否全等
   equals(jsxNode: JsxNode | string) {
     if (!this.sameTypeAndKey(jsxNode)) {
       return false;
@@ -125,6 +129,7 @@ class BaseInstance {
     jsxNode = jsxNode as JsxNode;
     return JSON.stringify(jsxNode) === JSON.stringify(this.jsxNode);
   }
+  // 获取当前元素dom列表
   getRealDoms(): RealDom[] {
     if (this instanceof RealDomInstance$) {
       return [this.dom];
@@ -132,6 +137,7 @@ class BaseInstance {
       return this.getRealChildDoms();
     }
   }
+  // 获取当前元素的子节点Dom列表
   getRealChildDoms(): Array<RealDom> {
     const realDoms: RealDom[] = [];
     this.childrens.map((instance) => {
@@ -145,6 +151,7 @@ class BaseInstance {
     });
     return realDoms;
   }
+  // 销毁
   destroyDom(isTop: boolean) {
     this.parentInstance.$.removeRef(this.instance);
     if (this instanceof RealDomInstance$ && isTop) {
@@ -156,6 +163,7 @@ class BaseInstance {
     }
     this.childrens = [];
   }
+  // prop发生改变，重新渲染当前实例
   async reRenderProps(newJsxNode: JsxNode) {
     if (typeof this.jsxNode === "string") {
       return;
@@ -175,6 +183,7 @@ class BaseInstance {
       await this.reRenderChildren(newJsxNode.props.children);
     }
   }
+  // 重新渲染子元素
   async reRenderChildren(
     newJsxNodes: Array<JsxNode | string> | JsxNode | string
   ): Promise<void> {
@@ -274,6 +283,7 @@ class RealDomInstance$ extends BaseInstance {
     super(jsxNode, parentDom, parentInstance, instance);
   }
   dom: RealDom;
+  // 设置dom属性
   setProps(props: { [prop: string]: any }) {
     this.jsxNode = this.jsxNode as JsxNode;
     for (const prop in props) {
@@ -294,6 +304,7 @@ class RealDomInstance$ extends BaseInstance {
       }
     }
   }
+  // 渲染实例真实dom
   async renderDom(): Promise<void> {
     const isTop = this.parentInstance.$.parentDom === this.parentDom;
     if (!isJsxNode(this.jsxNode)) {
