@@ -1,5 +1,4 @@
-import { Instance } from "@core/Instance";
-import { renderRoot } from "../core";
+import { This, renderRoot } from "../core";
 
 function Test3() {
   return 123;
@@ -22,7 +21,7 @@ function Test2(props: any) {
   );
 }
 
-function Test(props: any, that: Instance) {
+function Test(props: any, that: This) {
   this.useCreated(() => {
     this.count = 0;
   });

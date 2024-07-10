@@ -1,7 +1,6 @@
-import { Instance, RealDomInstance } from "@core/Instance"
+import { Instance } from "@core/instance/Instance"
+import { RealDomInstance } from "@core/instance/RealDomInstance"
 
-
-export const JSX_TEXT_TYPE = Symbol.for('jsx.text.type')
 
 export type JsxType = string | Component | symbol
 
@@ -9,10 +8,10 @@ export type JsxNode = {
   type: JsxType,
   ref?: string,
   key?: string,
-  props?: { [key: string]: any, children?: JsxNode[] | JsxNode | string}
+  props?: { [key: string]: any, children?: any}
 }
 
-export type Component = (props?: unknown, that?: Instance) => JsxNode | string
+export type Component = (props?: any, that?: This) => any
 
 
 export enum LIFE {
@@ -22,14 +21,14 @@ export enum LIFE {
   mounted = 3
 };
 
-export type RealDom = HTMLElement | Text
+export type RealDom = HTMLElement | Text 
 
 export type InstanceType = RealDomInstance | Instance
 
-export type InstanceThis = {
-  refs: { [name: string | string | symbol]: InstanceThis['expose'] | RealDom }
+export type This = {
+  refs: { [name: string | string | symbol]: This['expose'] | RealDom }
   useCreated: (fun: Function) => void
   useMounted: (fun: Function) => void
   expose: { [name: string | string | symbol]: any }
-  useExpose: (expose: InstanceThis['expose']) => void
+  useExpose: (expose: This['expose']) => void
 }

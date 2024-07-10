@@ -1,7 +1,13 @@
-import { createInstance } from "./Instance"
-import { JsxNode } from "./types/instance"
+import { createInstance } from "./instance/Instance"
+import { JsxNode, type Component, type This } from "./types/instance"
 
 
-export function renderRoot(jsxNode: JsxNode, dom: HTMLElement) {
+function renderRoot(jsxNode: JsxNode, dom: HTMLElement) {
   createInstance(jsxNode, dom)
+}
+
+export {
+  renderRoot,
+  This,
+  Component
 }

@@ -1,4 +1,4 @@
-import { Instance } from "./Instance";
+import { Instance } from "./instance/Instance";
 import { LIFE } from "./types/instance";
 
 function getObjectProxy(obj: any) {

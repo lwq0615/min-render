@@ -1,17 +1,14 @@
 import {
   createInstance,
-  createRealDomInstance,
-  Instance,
-  RealDomInstance,
-} from "@core/Instance";
+  Instance
+} from "@core/instance/Instance";
 import { InstanceType, JsxNode, RealDom } from "@core/types/instance";
 import {
-  getListenerName,
   isComponent,
   isFragmentJsxNode,
-  isJsxNode,
-  isListener,
+  isJsxNode
 } from "./utils";
+import { createRealDomInstance } from "./instance/RealDomInstance";
 
 /**
  * 渲染jsx节点内容到真实dom
@@ -20,7 +17,7 @@ import {
  * @param instance 节点所在的组件实例
  */
 export async function appendRealDomByJsxNode(
-  jsxNode: JsxNode | string | Array<JsxNode | string>,
+  jsxNode: any,
   parentDom: RealDom,
   instance: Instance
 ): Promise<Array<InstanceType>> {
