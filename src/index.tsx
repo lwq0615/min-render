@@ -12,10 +12,19 @@ function Test() {
     this.count++;
   });
   return (
-    <div id="a1">
-      {this.count}
-      <button onClick={() => this.count++}>+++</button>
-    </div>
+    <>
+      <div id="a1">
+        <div><span>{this.count}</span></div>
+        {
+          this.count % 2 > 0 && <div>123</div>
+        }
+        <button onClick={() => this.count++}>+++</button>
+        {
+          this.count % 2 == 0 && <div>333</div>
+        }
+      </div>
+      <div>sss</div>
+    </>
   );
 }
 
