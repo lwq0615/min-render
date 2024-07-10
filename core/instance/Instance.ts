@@ -84,9 +84,11 @@ export class Instance$ extends BaseInstance {
     });
   }
   unListenHandles: Function[] = [];
+  // 增加一个取消监听响应式数据的函数，用于取消监听
   pushUnListenHandler(handle: Function) {
     this.unListenHandles.push(handle);
   }
+  // 取消与实例相关的响应式监听
   invokeUnListenHandles(): void {
     let handle = null
     while(handle = this.unListenHandles.pop()) {

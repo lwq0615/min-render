@@ -18,7 +18,8 @@ function getObjectProxy(obj: any) {
   obj[FIELD_WATCHER] = {} as { [key: string | number | symbol]: Instance[] }
   return new Proxy(obj, {
     get(target, key) {
-      if (instanceArr[0]) {
+      // 如果是在render函数执行的过程中，就开始收集依赖于该数据的实例
+      if (instanceArr[0] && instanceArr[0].$.life >= LIFE.created) {
         if (!Array.isArray(target[FIELD_WATCHER][key])) {
           target[FIELD_WATCHER][key] = []
         }
@@ -28,9 +29,11 @@ function getObjectProxy(obj: any) {
           target[FIELD_WATCHER][key].splice(index, 1)
         })
       }
+      // 递归获取代理对象
       if (target[FIELD_PROXY][key]) {
         return target[FIELD_PROXY][key]
       } else {
+        // 只代理数组和对象
         if(!Array.isArray(target[key]) && !isObject(target[key])) {
           return target[key]
         }else {
@@ -42,15 +45,17 @@ function getObjectProxy(obj: any) {
     },
     set(target, key, value) {
       const proxy = getProxy(value);
+      // 代理后的值与原来相等，说明是无需代理的对象
       if(target[key] === proxy) {
+        // 删除原来的代理对象缓存
         delete target[FIELD_PROXY][key]
       }else {
         target[FIELD_PROXY][key] = proxy
       }
       target[key] = value;
+      // 遍历依赖于该数据的实例，执行实例渲染函数更新视图
       target[FIELD_WATCHER][key]?.forEach((instance: Instance) => {
         if (instance.$.life >= LIFE.mounted) {
-          // 设置响应式的值，并且生命周期在mounted后，重新渲染
           instance.$.renderDom();
         }
       })
