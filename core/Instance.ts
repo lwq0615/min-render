@@ -23,7 +23,6 @@ export function createInstance(
   return new Promise((resolve) => {
     const instance = new Instance(parentDom, jsxNode, parentInstance);
     const proxy = getProxy(instance);
-    instance.$.setRender(jsxNode, proxy);
     instance.$.setProxy(proxy);
     instance.$.render();
     instance.$.invokeCreatedLifeHandles();
@@ -189,7 +188,6 @@ class BaseInstance {
     }
     this.jsxNode = newJsxNode;
     if (this instanceof Instance$) {
-      this.setRender(newJsxNode, this.proxy);
       await this.renderDom();
     } else if (this instanceof RealDomInstance$) {
       if (this.sameProps(newJsxNode)) {
@@ -315,19 +313,13 @@ export class Instance$ extends BaseInstance {
       fun();
     });
   }
-  render: Component;
-  setRender(jsxNode: JsxNode, proxy: Instance) {
-    this.render = () => {
-      const childJsxNode = (jsxNode.type as Component).call(
-        proxy,
-        jsxNode.props
-      );
-      if (!isJsxNode(childJsxNode)) {
-        return String(childJsxNode);
-      }
-      return childJsxNode;
-    };
-  }
+  render: Component = function () {
+    const childJsxNode = (this.jsxNode.type as Component).call(this.proxy, this.jsxNode.props);
+    if (!isJsxNode(childJsxNode)) {
+      return String(childJsxNode);
+    }
+    return childJsxNode;
+  };
   refs: { [name: string]: Instance } = {};
   renderDom(): Promise<void> {
     if (this.renderTask) {
