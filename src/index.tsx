@@ -1,10 +1,19 @@
+import { Instance } from "@core/Instance";
 import { renderRoot } from "../core";
 
 function Test2(props: any) {
-  return <div>{props.children}</div>;
+  this.useCreated(() => {
+    this.aa = 123;
+  });
+  this.useExpose({
+    aaa: () => {
+      this.aa++
+    }
+  })
+  return <div>{this.aa}</div>;
 }
 
-function Test() {
+function Test(props: any, that: Instance) {
   this.useCreated(() => {
     this.count = 0;
   });
@@ -13,15 +22,13 @@ function Test() {
   });
   return (
     <>
-      <div id="a1">
-        <div><span>{this.count}</span></div>
+      <div id="a1" ref="a1"> 
         {
-          this.count % 2 > 0 && <div>123</div>
+          new Array(this.count).fill('').map((item, i) => <div key={i}>{i}</div>)
         }
-        <button onClick={() => this.count++}>+++</button>
-        {
-          this.count % 2 == 0 && <div>333</div>
-        }
+        <Test2 ref="t2"/>
+        <button onClick={() => this.refs.t2.aaa()}>+++</button>
+        <button onClick={() => this.count--}>---</button>
       </div>
       <div>sss</div>
     </>

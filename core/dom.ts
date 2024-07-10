@@ -11,7 +11,7 @@ import {
   isFragmentJsxNode,
   isJsxNode,
   isListener,
-} from ".";
+} from "./utils";
 
 /**
  * 渲染jsx节点内容到真实dom
@@ -20,11 +20,18 @@ import {
  * @param instance 节点所在的组件实例
  */
 export async function appendRealDomByJsxNode(
-  jsxNode: JsxNode | string,
+  jsxNode: JsxNode | string | Array<JsxNode | string>,
   parentDom: RealDom,
   instance: Instance
 ): Promise<Array<InstanceType>> {
-  if (typeof jsxNode === "string" || !isJsxNode(jsxNode)) {
+  if(Array.isArray(jsxNode)) {
+    const children = []
+    for (const item of jsxNode) {
+       children.push(...(await appendRealDomByJsxNode(item, parentDom, instance)))
+    }
+    return children
+  }
+  else if (typeof jsxNode === "string" || !isJsxNode(jsxNode)) {
     // 返回的不是jsx
     if((jsxNode as unknown as number) !== 0 && !Boolean(jsxNode)) {
       return []

@@ -12,7 +12,7 @@ export type JsxNode = {
   props?: { [key: string]: any, children?: JsxNode[] | JsxNode | string}
 }
 
-export type Component = (props?: unknown) => JsxNode | string
+export type Component = (props?: unknown, that?: Instance) => JsxNode | string
 
 
 export enum LIFE {
@@ -25,3 +25,11 @@ export enum LIFE {
 export type RealDom = HTMLElement | Text
 
 export type InstanceType = RealDomInstance | Instance
+
+export type InstanceThis = {
+  refs: { [name: string | string | symbol]: InstanceThis['expose'] | RealDom }
+  useCreated: (fun: Function) => void
+  useMounted: (fun: Function) => void
+  expose: { [name: string | string | symbol]: any }
+  useExpose: (expose: InstanceThis['expose']) => void
+}
