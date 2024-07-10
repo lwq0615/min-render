@@ -1,8 +1,8 @@
 import {
   createInstance,
   Instance
-} from "@core/instance/Instance";
-import { InstanceType, JsxNode, RealDom } from "@core/types/instance";
+} from "@/instance/Instance";
+import { InstanceType, JsxNode, RealDom } from "@/types/instance";
 import {
   isComponent,
   isFragmentJsxNode,
