@@ -44,7 +44,9 @@ function Test2(props: any) {
 function Test(props: any, that: This) {
   this.useCreated(() => {
     this.count = {
-      a: 1
+      a: {
+        b: 1
+      }
     };
   });
   this.useMounted(() => {
@@ -55,8 +57,8 @@ function Test(props: any, that: This) {
   return (
     <div id="a1" ref="a1">
       {this.count}
-      <button onClick={() => this.count.a++}>+++</button>
-      <button onClick={() => this.count.a--}>---</button>
+      <button onClick={() => this.count.a.b++}>+++</button>
+      <button onClick={() => this.count.a.b--}>---</button>
     </div>
   );
 }

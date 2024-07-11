@@ -1,9 +1,7 @@
 import { Instance } from "./instance/Instance";
 import { LIFE, This } from "./types/instance";
+import { ObjectKey } from "./types/object";
 import { isObject } from "./utils";
-
-const FIELD_PROXY = Symbol("__FIELD_PROXY");
-const FIELD_WATCHER = Symbol("__FIELD_WATCHER");
 
 const instanceArr: Instance[] = [];
 // 开始收集依赖
@@ -16,75 +14,91 @@ export function callInstanceRenderEnd() {
 }
 
 class ProxyData {
+  constructor(target: any, parentProxyData?: ProxyData, key?: ObjectKey) {
+    this.target = target;
+    this.key = key;
+    this.parentProxyData = parentProxyData;
+  }
+
+  target: any;
+  // 该对象在父对象中的属性名
+  key: ObjectKey;
   // 存放属性代理对象
-  [FIELD_PROXY]: { [key: string | number | symbol]: any } = {};
+  fieldProxy: { [key: string | number | symbol]: any } = {};
   // 存放依赖于每个属性的组件实例
-  [FIELD_WATCHER]: {
+  fieldWatcher: {
     [key: string | number | symbol]: Instance[];
   } = {};
-}
+  parentProxyData?: ProxyData;
 
-// 读取代理对象的属性值
-function proxyFieldGet(target: any, key: any, proxyData: ProxyData): any {
-  // 如果是在render函数执行的过程中，就开始收集依赖于该数据的实例
-  if (instanceArr[0]) {
-    if (!Array.isArray(proxyData[FIELD_WATCHER][key])) {
-      proxyData[FIELD_WATCHER][key] = [];
+  // 读取代理对象的属性值
+  proxyFieldGet(key: any): any {
+    // 如果是在render函数执行的过程中，就开始收集依赖于该数据的实例
+    if (instanceArr[0]) {
+      if (!Array.isArray(this.fieldWatcher[key])) {
+        this.fieldWatcher[key] = [];
+      }
+      this.fieldWatcher[key].push(instanceArr[0]);
+      instanceArr[0].pushUnListenHandler(() => {
+        const index = this.fieldWatcher[key].indexOf(instanceArr[0]);
+        this.fieldWatcher[key].splice(index, 1);
+      });
     }
-    proxyData[FIELD_WATCHER][key].push(instanceArr[0]);
-    instanceArr[0].pushUnListenHandler(() => {
-      const index = proxyData[FIELD_WATCHER][key].indexOf(instanceArr[0]);
-      proxyData[FIELD_WATCHER][key].splice(index, 1);
-    });
-  }
-  // 递归获取代理对象
-  if (proxyData[FIELD_PROXY][key]) {
-    return proxyData[FIELD_PROXY][key];
-  } else {
-    // 只代理数组和对象
-    if (!Array.isArray(target[key]) && !isObject(target[key])) {
-      return target[key];
+    // 递归获取代理对象
+    if (this.fieldProxy[key]) {
+      return this.fieldProxy[key];
     } else {
-      const value = getProxy(target[key]);
-      proxyData[FIELD_PROXY][key] = value;
-      return value;
+      // 只代理数组和对象
+      if (!Array.isArray(this.target[key]) && !isObject(this.target[key])) {
+        return this.target[key];
+      } else {
+        const value = getProxy(this.target[key], this, key);
+        this.fieldProxy[key] = value;
+        return value;
+      }
     }
+  }
+  // 设置代理对象的属性值
+  proxyFieldSet(key: any, value: any): boolean {
+    const proxy = getProxy(value, this, key);
+    // 代理后的值与原来相等，说明是无需代理的对象
+    if (this.target[key] === proxy) {
+      // 删除原来的代理对象缓存
+      delete this.fieldProxy[key];
+    } else {
+      this.fieldProxy[key] = proxy;
+    }
+    this.target[key] = value;
+    this.callFieldWatcherUpdate(key);
+    return true;
+  }
+  // 更新依赖于当前代理对象key属性的实例
+  callFieldWatcherUpdate(key: any) {
+    this.fieldWatcher[key]?.forEach((instance: Instance) => {
+      if (instance.life >= LIFE.mounted) {
+        instance.renderDom();
+      }
+    });
+    this.callCurrentWatcherUpdate();
+  }
+  // 更新依赖于当前代理对象的实例
+  callCurrentWatcherUpdate() {
+    this.parentProxyData?.callFieldWatcherUpdate(this.key);
   }
 }
 
-// 设置代理对象的属性值
-function proxyFieldSet(
-  target: any,
-  key: any,
-  value: any,
-  proxyData: ProxyData
-): boolean {
-  const proxy = getProxy(value);
-  // 代理后的值与原来相等，说明是无需代理的对象
-  if (target[key] === proxy) {
-    // 删除原来的代理对象缓存
-    delete proxyData[FIELD_PROXY][key];
-  } else {
-    proxyData[FIELD_PROXY][key] = proxy;
-  }
-  target[key] = value;
-  // 遍历依赖于该数据的实例，执行实例渲染函数更新视图
-  proxyData[FIELD_WATCHER][key]?.forEach((instance: Instance) => {
-    if (instance.life >= LIFE.mounted) {
-      instance.renderDom();
-    }
-  });
-  return true;
-}
-
-function getObjectProxy(obj: any) {
-  const proxyData = new ProxyData();
+function getObjectProxy(
+  obj: any,
+  parentProxyData?: ProxyData,
+  key?: ObjectKey
+) {
+  const proxyData = new ProxyData(obj, parentProxyData, key);
   return new Proxy(obj, {
     get(target, key) {
-      return proxyFieldGet(target, key, proxyData);
+      return proxyData.proxyFieldGet(key);
     },
     set(target, key, value) {
-      return proxyFieldSet(target, key, value, proxyData);
+      return proxyData.proxyFieldSet(key, value);
     },
   });
 }
@@ -100,14 +114,18 @@ const arrFuns: Array<keyof Array<any>> = [
   "splice",
   "copyWithin",
 ];
-function getArrayProxy(arr: any[]): any[] {
-  const proxyData = new ProxyData();
+function getArrayProxy(
+  arr: any[],
+  parentProxyData?: ProxyData,
+  key?: ObjectKey
+): any[] {
+  const proxyData = new ProxyData(arr, parentProxyData, key);
   return new Proxy(arr, {
     get(target, key: any) {
       if (typeof key === "symbol") {
         return target[key as any];
       } else if (Number(key) == key) {
-        return proxyFieldGet(target, key, proxyData);
+        return proxyData.proxyFieldGet(key);
       } else if (arrFuns.includes(key)) {
         return target[key];
       } else {
@@ -119,7 +137,7 @@ function getArrayProxy(arr: any[]): any[] {
         target[key as any] = value;
         return true;
       } else if (Number(key) == key) {
-        return proxyFieldSet(target, key, value, proxyData);
+        return proxyData.proxyFieldSet(key, value);
       } else {
         target[key] = value;
         return true;
@@ -157,13 +175,17 @@ function getInstanceProxy(instance: Instance) {
   });
 }
 
-export function getProxy(obj: any): any {
+export function getProxy(
+  obj: any,
+  parentProxyData?: ProxyData,
+  key?: ObjectKey
+): any {
   if (obj instanceof Instance) {
     return getInstanceProxy(obj);
   } else if (Array.isArray(obj)) {
-    return getArrayProxy(obj);
+    return getArrayProxy(obj, parentProxyData, key);
   } else if (isObject(obj)) {
-    return getObjectProxy(obj);
+    return getObjectProxy(obj, parentProxyData, key);
   } else {
     return obj;
   }
