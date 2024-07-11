@@ -1,5 +1,5 @@
 import { Instance } from "./instance/Instance";
-import { LIFE } from "./types/instance";
+import { LIFE, This } from "./types/instance";
 import { isObject } from "./utils";
 
 const FIELD_PROXY = Symbol("__FIELD_PROXY");
@@ -64,17 +64,21 @@ function getObjectProxy(obj: any) {
   });
 }
 
-const proxyHooks = ["useMounted", "useCreated", "useExpose"];
-const proxyFields = ["refs"];
+const proxyHooks: Array<keyof This> = ["useMounted", "useCreated", "useExpose"];
+const proxyFields: Array<keyof This>  = ["refs"];
 function getInstanceProxy(instance: Instance) {
   const obj = {} as any
+  proxyHooks.forEach(hook => {
+    obj[hook] = (instance as any)[hook].bind(instance);
+  })
+  proxyFields.forEach(key => {
+    obj[key] = instance[key]
+  })
   const proxy = getProxy(obj)
   return new Proxy(obj, {
     get(target, key: any) {
-      if (proxyHooks.includes(key)) {
-        return (instance as any)[key].bind(instance);
-      } else if (proxyFields.includes(key)) {
-        return (instance as any)[key];
+      if (proxyHooks.concat(proxyFields).includes(key)) {
+        return obj[key]
       } else {
         return proxy[key];
       }
