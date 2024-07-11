@@ -5,6 +5,7 @@ import {
   JsxNode,
   LIFE,
   RealDom,
+  InstanceExpose,
 } from "../types/instance";
 import { isJsxNode, isObject } from "../utils";
 import { appendRealDomByJsxNode } from "../dom";
@@ -117,7 +118,7 @@ export class Instance extends BaseInstance {
       delete this.refs[instance.jsxNode.ref];
     }
   }
-  expose: This["expose"] = {};
+  expose: InstanceExpose = {};
   useExpose: This["useExpose"] = function (expose) {
     if (!isObject(expose)) {
       throw new Error("expose must be object");

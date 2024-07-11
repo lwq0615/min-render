@@ -26,10 +26,11 @@ export type RealDom = HTMLElement | Text
 
 export type InstanceType = RealDomInstance | Instance
 
+export type InstanceExpose = { [name: string | string | symbol]: any }
+
 export type This = {
-  refs: { [name: string | string | symbol]: This['expose'] | RealDom }
+  refs: { [name: string | string | symbol]: InstanceExpose | RealDom }
   useCreated: (fun: Function) => void
   useMounted: (fun: Function) => void
-  expose: { [name: string | string | symbol]: any }
-  useExpose: (expose: This['expose']) => void
+  useExpose: (expose: InstanceExpose) => void
 }
