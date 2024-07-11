@@ -103,17 +103,6 @@ function getObjectProxy(
   });
 }
 
-// 会改变原数组的方法
-const arrFuns: Array<keyof Array<any>> = [
-  "pop",
-  "push",
-  "shift",
-  "unshift",
-  "reverse",
-  "sort",
-  "splice",
-  "copyWithin",
-];
 function getArrayProxy(
   arr: any[],
   parentProxyData?: ProxyData,
@@ -126,8 +115,6 @@ function getArrayProxy(
         return target[key as any];
       } else if (Number(key) == key) {
         return proxyData.proxyFieldGet(key);
-      } else if (arrFuns.includes(key)) {
-        return target[key];
       } else {
         return target[key];
       }
