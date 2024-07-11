@@ -52,7 +52,6 @@ function Test(props: any, that: This) {
     // this.count = 1;
     // this.count.a
   });
-  console.log(this.count);
   return (
     <div id="a1" ref="a1">
       {this.count}
