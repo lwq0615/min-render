@@ -19,12 +19,12 @@ function getObjectProxy(obj: any) {
   return new Proxy(obj, {
     get(target, key) {
       // 如果是在render函数执行的过程中，就开始收集依赖于该数据的实例
-      if (instanceArr[0] && instanceArr[0].$.life >= LIFE.created) {
+      if (instanceArr[0] && instanceArr[0].life >= LIFE.created) {
         if (!Array.isArray(target[FIELD_WATCHER][key])) {
           target[FIELD_WATCHER][key] = []
         }
         target[FIELD_WATCHER][key].push(instanceArr[0])
-        instanceArr[0].$.pushUnListenHandler(() => {
+        instanceArr[0].pushUnListenHandler(() => {
           const index = target[FIELD_WATCHER][key].indexOf(instanceArr[0])
           target[FIELD_WATCHER][key].splice(index, 1)
         })
@@ -55,8 +55,8 @@ function getObjectProxy(obj: any) {
       target[key] = value;
       // 遍历依赖于该数据的实例，执行实例渲染函数更新视图
       target[FIELD_WATCHER][key]?.forEach((instance: Instance) => {
-        if (instance.$.life >= LIFE.mounted) {
-          instance.$.renderDom();
+        if (instance.life >= LIFE.mounted) {
+          instance.renderDom();
         }
       })
       return true;
@@ -72,9 +72,9 @@ function getInstanceProxy(instance: Instance) {
   return new Proxy(obj, {
     get(target, key: any) {
       if (proxyHooks.includes(key)) {
-        return (instance.$ as any)[key].bind(instance.$);
+        return (instance as any)[key].bind(instance);
       } else if (proxyFields.includes(key)) {
-        return (instance.$ as any)[key];
+        return (instance as any)[key];
       } else {
         return proxy[key];
       }

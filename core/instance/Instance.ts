@@ -8,7 +8,11 @@ import {
 } from "../types/instance";
 import { isJsxNode, isObject } from "../utils";
 import { appendRealDomByJsxNode } from "../dom";
-import { callInstanceRenderEnd, callInstanceRenderStart, getProxy } from "../proxy";
+import {
+  callInstanceRenderEnd,
+  callInstanceRenderStart,
+  getProxy,
+} from "../proxy";
 import { BaseInstance } from "./BaseInstance";
 import { RealDomInstance } from "./RealDomInstance";
 
@@ -26,34 +30,20 @@ export function createInstance(
   return new Promise((resolve) => {
     const instance = new Instance(parentDom, jsxNode, parentInstance);
     const proxy = getProxy(instance);
-    instance.$.setProxy(proxy);
-    instance.$.render();
-    instance.$.invokeCreatedLifeHandles();
-    instance.$.renderDom().then(() => {
-      instance.$.invokeMountedLifeHandles();
+    instance.setProxy(proxy);
+    instance.render();
+    instance.invokeCreatedLifeHandles();
+    instance.renderDom().then(() => {
+      instance.invokeMountedLifeHandles();
       resolve(instance);
     });
   });
 }
 
-
 // 自定义组件虚拟dom
-export class Instance {
+export class Instance extends BaseInstance {
   constructor(parentDom: RealDom, jsxNode: JsxNode, parentInstance?: Instance) {
-    this.$ = new Instance$(parentDom, jsxNode, this, parentInstance);
-  }
-  [name: string | symbol]: unknown;
-  $: Instance$;
-}
-
-export class Instance$ extends BaseInstance {
-  constructor(
-    parentDom: RealDom,
-    jsxNode: JsxNode,
-    instance: Instance,
-    parentInstance?: Instance
-  ) {
-    super(jsxNode, parentDom, parentInstance, instance);
+    super(jsxNode, parentDom, parentInstance);
   }
   life: LIFE = LIFE.create;
   createdLifeHandles: Function[] = [];
@@ -61,7 +51,7 @@ export class Instance$ extends BaseInstance {
   setProxy(proxy: Instance) {
     this.proxy = proxy;
   }
-  useCreated: This["useCreated"] = function (fun: Function) {
+  useCreated: This["useCreated"] = function (fun) {
     if (this.life === LIFE.create) {
       this.createdLifeHandles.push(fun);
     }
@@ -73,7 +63,7 @@ export class Instance$ extends BaseInstance {
     this.life = LIFE.created;
   }
   mountedLifeHandles: Function[] = [];
-  useMounted: This["useMounted"] = function (fun: Function) {
+  useMounted: This["useMounted"] = function (fun) {
     if (this.life === LIFE.create) {
       this.mountedLifeHandles.push(fun);
     }
@@ -90,20 +80,20 @@ export class Instance$ extends BaseInstance {
   }
   // 取消与实例相关的响应式监听
   invokeUnListenHandles(): void {
-    let handle = null
-    while(handle = this.unListenHandles.pop()) {
-      handle?.()
+    let handle = null;
+    while ((handle = this.unListenHandles.pop())) {
+      handle?.();
     }
   }
   render: Component = function () {
-    this.invokeUnListenHandles()
-    callInstanceRenderStart(this.instance)
+    this.invokeUnListenHandles();
+    callInstanceRenderStart(this);
     const childJsxNode = (this.jsxNode.type as Component).call(
       this.proxy,
       this.jsxNode.props,
       this.proxy
     );
-    callInstanceRenderEnd()
+    callInstanceRenderEnd();
     if (!isJsxNode(childJsxNode)) {
       return String(childJsxNode);
     }
@@ -111,20 +101,20 @@ export class Instance$ extends BaseInstance {
   };
   refs: This["refs"] = {};
   setRef(instance: InstanceType) {
-    if (typeof instance.$.jsxNode !== "string" && instance.$.jsxNode?.ref) {
-      if (this.refs[instance.$.jsxNode.ref]) {
-        throw new Error(`ref ${instance.$.jsxNode.ref} is already exists`);
+    if (typeof instance.jsxNode !== "string" && instance.jsxNode?.ref) {
+      if (this.refs[instance.jsxNode.ref]) {
+        throw new Error(`ref ${instance.jsxNode.ref} is already exists`);
       }
       if (instance instanceof Instance) {
-        this.refs[instance.$.jsxNode.ref] = instance.$.expose;
+        this.refs[instance.jsxNode.ref] = instance.expose;
       } else if (instance instanceof RealDomInstance) {
-        this.refs[instance.$.jsxNode.ref] = instance.$.dom;
+        this.refs[instance.jsxNode.ref] = instance.dom;
       }
     }
   }
-  removeRef(instance: InstanceType) {
-    if (typeof instance.$.jsxNode !== "string" && instance.$.jsxNode?.ref) {
-      delete this.refs[instance.$.jsxNode.ref];
+  removeRef(instance: BaseInstance) {
+    if (typeof instance.jsxNode !== "string" && instance.jsxNode?.ref) {
+      delete this.refs[instance.jsxNode.ref];
     }
   }
   expose: This["expose"] = {};
@@ -162,7 +152,7 @@ export class Instance$ extends BaseInstance {
           this.childrens = await appendRealDomByJsxNode(
             childJsxNode,
             this.parentDom,
-            this.instance as Instance
+            this
           );
           // 第一次渲染的时候直接插入dom树
           if (this.life <= LIFE.created) {
@@ -170,7 +160,7 @@ export class Instance$ extends BaseInstance {
           }
           this.life = LIFE.mounted;
           this.renderTask = null;
-          this.parentInstance?.$.setRef(this.instance);
+          this.parentInstance?.setRef(this);
           resolve();
         }
       });

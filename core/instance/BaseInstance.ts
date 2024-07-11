@@ -1,5 +1,5 @@
-import { Instance, Instance$ } from "./Instance";
-import { RealDomInstance$ } from "./RealDomInstance";
+import { Instance} from "./Instance";
+import { RealDomInstance } from "./RealDomInstance";
 import { appendRealDomByJsxNode } from "../dom";
 import { InstanceType, JsxNode, LIFE, RealDom } from "../types/instance";
 import { isFragmentJsxNode, isJsxNode } from "../utils";
@@ -9,20 +9,16 @@ export class BaseInstance {
   constructor(
     jsxNode: JsxNode | string,
     parentDom: RealDom,
-    parentInstance: Instance,
-    instance: InstanceType
+    parentInstance: Instance
   ) {
     this.jsxNode = jsxNode;
     this.parentDom = parentDom;
     this.parentInstance = parentInstance;
-    this.instance = instance;
     if (typeof jsxNode !== "string") {
       this.key = jsxNode.key;
     }
   }
   key: string;
-  // 节点实例
-  instance: InstanceType;
   // 节点jsx
   jsxNode: JsxNode | string;
   // 渲染的父dom
@@ -82,7 +78,7 @@ export class BaseInstance {
   }
   // 获取当前元素dom列表
   getRealDoms(): RealDom[] {
-    if (this instanceof RealDomInstance$) {
+    if (this instanceof RealDomInstance) {
       return [this.dom];
     } else {
       return this.getRealChildDoms();
@@ -93,27 +89,27 @@ export class BaseInstance {
     const realDoms: RealDom[] = [];
     this.childrens.map((instance) => {
       if (instance instanceof Instance) {
-        for (const dom of instance.$.getRealChildDoms()) {
+        for (const dom of instance.getRealChildDoms()) {
           realDoms.push(dom);
         }
       } else {
-        realDoms.push(instance.$.dom);
+        realDoms.push(instance.dom);
       }
     });
     return realDoms;
   }
   // 销毁
   destroyDom(isTop: boolean) {
-    this.parentInstance.$.removeRef(this.instance);
-    if(this instanceof Instance$) {
+    this.parentInstance.removeRef(this);
+    if(this instanceof Instance) {
       this.life = LIFE.destroy
     }
-    if (this instanceof RealDomInstance$ && isTop) {
+    if (this instanceof RealDomInstance && isTop) {
       this.dom.remove();
       isTop = false;
     }
     for (const instance of this.childrens) {
-      instance.$.destroyDom(isTop);
+      instance.destroyDom(isTop);
     }
     this.childrens = [];
   }
@@ -122,10 +118,10 @@ export class BaseInstance {
     if (typeof this.jsxNode === "string") {
       return;
     }
-    if (this instanceof Instance$) {
+    if (this instanceof Instance) {
       this.jsxNode = newJsxNode;
       await this.renderDom();
-    } else if (this instanceof RealDomInstance$) {
+    } else if (this instanceof RealDomInstance) {
       const diffProps = this.getDiffObj(newJsxNode)
       if (!Object.keys(diffProps).length) {
         this.jsxNode = newJsxNode;
@@ -159,11 +155,11 @@ export class BaseInstance {
     }
     newJsxNodes = fragmentJsxNodeTran(newJsxNodes);
     let parentDom = this.parentDom;
-    if (this instanceof RealDomInstance$) {
-      parentDom = (this as unknown as RealDomInstance$).dom;
+    if (this instanceof RealDomInstance) {
+      parentDom = (this as unknown as RealDomInstance).dom;
     }
     let offset = 0;
-    if (this instanceof Instance$) {
+    if (this instanceof Instance) {
       offset += [...parentDom.childNodes].indexOf(this.getRealDoms()[0]);
     }
     const children: InstanceType[] = [];
@@ -171,13 +167,13 @@ export class BaseInstance {
     for (const jsxNode of newJsxNodes) {
       // 有可重复使用的相同标签&&key节点
       const index: number = this.childrens.findIndex((instance) => {
-        return instance.$.sameTypeAndKey(jsxNode);
+        return instance.sameTypeAndKey(jsxNode);
       });
       if (index !== -1) {
         const sameNode: InstanceType = this.childrens.splice(index, 1)[0];
         // 该节点属性发生了改变，重新渲染
-        if (!sameNode.$.equals(jsxNode)) {
-          await sameNode.$.reRenderProps(jsxNode as JsxNode);
+        if (!sameNode.equals(jsxNode)) {
+          await sameNode.reRenderProps(jsxNode as JsxNode);
         }
         children.push(sameNode);
       } else {
@@ -192,10 +188,10 @@ export class BaseInstance {
     }
     // 卸载不需要的组件
     for (const item of this.childrens) {
-      item.$.destroyDom(true);
+      item.destroyDom(true);
     }
     const doms = children
-      .map((item) => item.$.getRealDoms())
+      .map((item) => item.getRealDoms())
       .reduce((pre, cur) => pre.concat(cur), []);
     // 开始diff，卸载不可复用的节点
     // 排列插入新的节点

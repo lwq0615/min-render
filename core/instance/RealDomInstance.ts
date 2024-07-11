@@ -11,33 +11,19 @@ export function createRealDomInstance(
 ): Promise<RealDomInstance> {
   return new Promise(async (resolve) => {
     const instance = new RealDomInstance(parentDom, jsxNode, parentInstance);
-    return instance.$.renderDom().then(() => {
+    return instance.renderDom().then(() => {
       resolve(instance);
     });
   });
 }
 
-
-// html标签虚拟dom
-export class RealDomInstance {
+export class RealDomInstance extends BaseInstance {
   constructor(
     parentDom: RealDom,
     jsxNode: JsxNode | string,
     parentInstance: Instance
   ) {
-    this.$ = new RealDomInstance$(parentDom, jsxNode, parentInstance, this);
-  }
-  $: RealDomInstance$;
-}
-
-export class RealDomInstance$ extends BaseInstance {
-  constructor(
-    parentDom: RealDom,
-    jsxNode: JsxNode | string,
-    parentInstance: Instance,
-    instance: RealDomInstance
-  ) {
-    super(jsxNode, parentDom, parentInstance, instance);
+    super(jsxNode, parentDom, parentInstance);
   }
   dom: RealDom;
   // 设置dom属性
@@ -63,7 +49,7 @@ export class RealDomInstance$ extends BaseInstance {
   }
   // 渲染实例真实dom
   async renderDom(): Promise<void> {
-    const isTop = this.parentInstance.$.parentDom === this.parentDom;
+    const isTop = this.parentInstance.parentDom === this.parentDom;
     if (!isJsxNode(this.jsxNode)) {
       const node = document.createTextNode(String(this.jsxNode));
       if (!isTop) {
@@ -99,7 +85,7 @@ export class RealDomInstance$ extends BaseInstance {
       if (!isTop) {
         this.parentDom.appendChild(realDom);
       }
-      this.parentInstance.$.setRef(this.instance);
+      this.parentInstance.setRef(this);
     }
   }
 }
