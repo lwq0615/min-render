@@ -89,7 +89,7 @@ export class Instance extends BaseInstance {
     if (!isJsxNode(childJsxNode)) {
       return String(childJsxNode);
     }
-    if(this.life === LIFE.create) {
+    if (this.life === LIFE.create) {
       this.life = LIFE.created
     }
     return childJsxNode;
@@ -161,5 +161,19 @@ export class Instance extends BaseInstance {
       });
     });
     return this.renderTask;
+  }
+  destroyDom(isTop: boolean) {
+    super.destroyDom(isTop)
+    this.invokeUnListenHandles()
+    this.life = LIFE.destroy
+  }
+  async reRenderProps(newJsxNode: JsxNode) {
+    if (typeof this.jsxNode === "string") {
+      return;
+    }
+    if (this instanceof Instance) {
+      this.jsxNode = newJsxNode;
+      await this.renderDom();
+    }
   }
 }

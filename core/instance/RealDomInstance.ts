@@ -38,10 +38,10 @@ export class RealDomInstance extends BaseInstance {
       if (isListener(prop)) {
         (this.dom as any)[getListenerName(prop)] = value;
       } else {
-        this.dom = this.dom  as HTMLElement
-        if(props[prop] === void 0) {
+        this.dom = this.dom as HTMLElement
+        if (props[prop] === void 0) {
           this.dom.removeAttribute(prop)
-        }else {
+        } else {
           this.dom.setAttribute(prop, props[prop])
         }
       }
@@ -87,5 +87,25 @@ export class RealDomInstance extends BaseInstance {
       }
       this.parentInstance.setRef(this);
     }
+  }
+  destroyDom(isTop: boolean) {
+    this.dom.remove();
+    isTop = false;
+    super.destroyDom(isTop);
+  }
+  // prop发生改变，重新渲染当前实例
+  async reRenderProps(newJsxNode: JsxNode) {
+    if (typeof this.jsxNode === "string") {
+      return;
+    }
+    const diffProps = this.getDiffObj(newJsxNode)
+    if (!Object.keys(diffProps).length) {
+      this.jsxNode = newJsxNode;
+    } else {
+      // 重新设置变化的属性
+      this.jsxNode = newJsxNode;
+      this.setProps(diffProps)
+    }
+    await this.reRenderChildren(newJsxNode.props.children);
   }
 }

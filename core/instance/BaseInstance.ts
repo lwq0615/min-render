@@ -101,37 +101,10 @@ export class BaseInstance {
   // 销毁
   destroyDom(isTop: boolean) {
     this.parentInstance.removeRef(this);
-    if(this instanceof Instance) {
-      this.life = LIFE.destroy
-    }
-    if (this instanceof RealDomInstance && isTop) {
-      this.dom.remove();
-      isTop = false;
-    }
     for (const instance of this.childrens) {
       instance.destroyDom(isTop);
     }
     this.childrens = [];
-  }
-  // prop发生改变，重新渲染当前实例
-  async reRenderProps(newJsxNode: JsxNode) {
-    if (typeof this.jsxNode === "string") {
-      return;
-    }
-    if (this instanceof Instance) {
-      this.jsxNode = newJsxNode;
-      await this.renderDom();
-    } else if (this instanceof RealDomInstance) {
-      const diffProps = this.getDiffObj(newJsxNode)
-      if (!Object.keys(diffProps).length) {
-        this.jsxNode = newJsxNode;
-      } else {
-        // 重新设置变化的属性
-        this.jsxNode = newJsxNode;
-        this.setProps(diffProps)
-      }
-      await this.reRenderChildren(newJsxNode.props.children);
-    }
   }
   // 重新渲染子元素
   async reRenderChildren(
