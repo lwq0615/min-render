@@ -21,24 +21,42 @@ function Test2(props: any) {
   );
 }
 
+// function Test(props: any, that: This) {
+//   this.useCreated(() => {
+//     this.count = [];
+//   });
+//   this.useMounted(() => {
+//     // this.count = 1;
+//     this.count[0] = 3
+//   });
+//   return (
+//     <div id="a1" ref="a1">
+//       {this.count.map((item: number) => (
+//         <div key={item}>{item}</div>
+//       ))}
+//       {this.count}
+//       <button onClick={() => this.count.push(Math.ceil(Math.random() * 10))}>+++</button>
+//       <button onClick={() => this.count.pop()}>---</button>
+//     </div>
+//   );
+// }
+
 function Test(props: any, that: This) {
   this.useCreated(() => {
-    // this.count = 0;
+    this.count = {
+      a: 1
+    };
   });
   this.useMounted(() => {
-    this.count = 1;
+    // this.count = 1;
+    // this.count.a
   });
+  console.log(this.count);
   return (
     <div id="a1" ref="a1">
-      {/* {new Array(this.count).fill("").map((item, i) => (
-          <div key={i}>{i}</div>
-        ))}
-        <Test2 ref="t2">
-          {this.count}
-        </Test2> */}
       {this.count}
-      <button onClick={() => this.count++}>+++</button>
-      <button onClick={() => this.count--}>---</button>
+      <button onClick={() => this.count.a++}>+++</button>
+      <button onClick={() => this.count.a--}>---</button>
     </div>
   );
 }

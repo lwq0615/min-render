@@ -32,8 +32,6 @@ export function createInstance(
     const instance = new Instance(parentDom, jsxNode, parentInstance);
     const proxy = getProxy(instance);
     instance.setProxy(proxy);
-    instance.render();
-    instance.invokeCreatedLifeHandles();
     instance.renderDom().then(() => {
       instance.invokeMountedLifeHandles();
       resolve(instance);
@@ -47,22 +45,15 @@ export class Instance extends BaseInstance {
     super(jsxNode, parentDom, parentInstance);
   }
   life: LIFE = LIFE.create;
-  createdLifeHandles: Function[] = [];
   proxy: Instance;
   setProxy(proxy: Instance) {
     this.proxy = proxy;
   }
   useCreated: This["useCreated"] = function (fun) {
     if (this.life === LIFE.create) {
-      this.createdLifeHandles.push(fun);
+      fun()
     }
   };
-  invokeCreatedLifeHandles(): void {
-    this.createdLifeHandles.forEach((fun) => {
-      fun();
-    });
-    this.life = LIFE.created;
-  }
   mountedLifeHandles: Function[] = [];
   useMounted: This["useMounted"] = function (fun) {
     if (this.life === LIFE.create) {
@@ -97,6 +88,9 @@ export class Instance extends BaseInstance {
     callInstanceRenderEnd();
     if (!isJsxNode(childJsxNode)) {
       return String(childJsxNode);
+    }
+    if(this.life === LIFE.create) {
+      this.life = LIFE.created
     }
     return childJsxNode;
   };
