@@ -1,13 +1,15 @@
 import { createInstance } from "./instance/Instance"
-import { JsxNode, type Component, type This } from "./types/instance"
+import { type RenderRoot, type Component, type This } from "./types/instance"
+import { useStore } from "./proxy"
 
 
-function renderRoot(jsxNode: JsxNode, dom: HTMLElement) {
+const renderRoot: RenderRoot = (jsxNode, dom) => {
   createInstance(jsxNode, dom)
 }
 
 export {
   renderRoot,
   This,
-  Component
+  Component,
+  useStore
 }

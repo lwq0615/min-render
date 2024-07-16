@@ -1,7 +1,8 @@
-import { Instance } from "./instance/Instance";
-import { LIFE, This } from "./types/instance";
-import { ObjectKey } from "./types/object";
-import { isObject } from "./utils";
+import { Instance } from './instance/Instance';
+import { LIFE, This } from './types/instance';
+import { ObjectKey } from './types/object';
+import { UseStore } from './types/proxy';
+import { isObject } from './utils';
 
 const instanceArr: Instance[] = [];
 // 开始收集依赖
@@ -111,7 +112,7 @@ function getArrayProxy(
   const proxyData = new ProxyData(arr, parentProxyData, key);
   return new Proxy(arr, {
     get(target, key: any) {
-      if (typeof key === "symbol") {
+      if (typeof key === 'symbol') {
         return target[key as any];
       } else if (Number(key) == key) {
         return proxyData.proxyFieldGet(key);
@@ -120,7 +121,7 @@ function getArrayProxy(
       }
     },
     set(target, key: any, value) {
-      if (typeof key === "symbol") {
+      if (typeof key === 'symbol') {
         target[key as any] = value;
         return true;
       } else if (Number(key) == key) {
@@ -133,8 +134,8 @@ function getArrayProxy(
   });
 }
 
-const proxyHooks: Array<keyof This> = ["useMounted", "useCreated", "useExpose"];
-const proxyFields: Array<keyof This> = ["refs"];
+const proxyHooks: Array<keyof This> = ['useMounted', 'useCreated', 'useExpose'];
+const proxyFields: Array<keyof This> = ['refs'];
 function getInstanceProxy(instance: Instance) {
   const obj = {} as any;
   proxyHooks.forEach((hook) => {
@@ -176,4 +177,11 @@ export function getProxy(
   } else {
     return obj;
   }
+}
+
+export function useStore<T>(defaultStore?: T): T {
+  if(defaultStore !== void 0 && !Array.isArray(defaultStore) && !isObject(defaultStore)) {
+    throw new Error('the param of useStore must be a object or array');
+  }
+  return getProxy(defaultStore || {});
 }

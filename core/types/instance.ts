@@ -34,3 +34,5 @@ export type This = {
   useMounted: (fun: Function) => void
   useExpose: (expose: InstanceExpose) => void
 }
+
+export type RenderRoot = (jsxNode: JsxNode, dom: HTMLElement) => void
