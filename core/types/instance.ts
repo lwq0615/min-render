@@ -1,5 +1,6 @@
 import { Instance } from "../instance/Instance"
 import { RealDomInstance } from "../instance/RealDomInstance"
+import { ObjectKey } from "./object"
 
 
 export type JsxType = string | Component | symbol
@@ -26,10 +27,11 @@ export type RealDom = HTMLElement | Text
 
 export type InstanceType = RealDomInstance | Instance
 
-export type InstanceExpose = { [name: string | number | symbol]: any }
+export type InstanceExpose = { [name: ObjectKey]: any }
 
 export type This = {
-  refs: { [name: string | number | symbol]: InstanceExpose | HTMLElement }
+  refs: { [name: ObjectKey]: InstanceExpose | HTMLElement }
+  useRefs: () => This["refs"]
   useCreated: (fun: Function) => void
   useMounted: (fun: Function) => void
   useExpose: (expose: InstanceExpose) => void

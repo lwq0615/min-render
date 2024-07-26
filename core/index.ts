@@ -1,6 +1,8 @@
 import { createInstance } from "./instance/Instance"
-import { type RenderRoot, type Component, type This } from "./types/instance"
-import { useStore } from "./proxy"
+import { useReactive } from "./proxy"
+import { useCreated, useMounted, useExpose, useRefs } from './instance/hooks'
+import { RenderRoot } from "./types/instance"
+import { This, Component } from "./types/instance"
 
 
 const renderRoot: RenderRoot = (jsxNode, dom) => {
@@ -8,8 +10,12 @@ const renderRoot: RenderRoot = (jsxNode, dom) => {
 }
 
 export {
-  renderRoot,
   This,
   Component,
-  useStore
+  renderRoot,
+  useReactive,
+  useCreated,
+  useMounted,
+  useExpose,
+  useRefs
 }

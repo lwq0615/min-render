@@ -10,12 +10,11 @@ import {
 import { isJsxNode, isObject } from "../utils";
 import { appendRealDomByJsxNode } from "../dom";
 import {
-  callInstanceRenderEnd,
-  callInstanceRenderStart,
   getProxy,
 } from "../proxy";
 import { BaseInstance } from "./BaseInstance";
 import { RealDomInstance } from "./RealDomInstance";
+import { callInstanceRenderEnd, callInstanceRenderStart } from "./renderDepend";
 
 /**
  * 创建组件实例
@@ -107,6 +106,9 @@ export class Instance extends BaseInstance {
       }
     }
   }
+  useRefs: This["useRefs"] = function () {
+    return this.refs;
+  };
   removeRef(instance: BaseInstance) {
     if (typeof instance.jsxNode !== "string" && instance.jsxNode?.ref) {
       delete this.refs[instance.jsxNode.ref];

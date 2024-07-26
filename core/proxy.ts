@@ -1,18 +1,9 @@
 import { Instance } from './instance/Instance';
+import { getRenderingInstance } from './instance/renderDepend';
 import { LIFE, This } from './types/instance';
 import { ObjectKey } from './types/object';
-import { UseStore } from './types/proxy';
 import { isObject } from './utils';
 
-const instanceArr: Instance[] = [];
-// 开始收集依赖
-export function callInstanceRenderStart(instance: Instance) {
-  instanceArr.push(instance);
-}
-// 收集依赖结束
-export function callInstanceRenderEnd() {
-  instanceArr.pop();
-}
 
 class ProxyData {
   constructor(target: any, parentProxyData?: ProxyData, key?: ObjectKey) {
@@ -25,23 +16,24 @@ class ProxyData {
   // 该对象在父对象中的属性名
   key: ObjectKey;
   // 存放属性代理对象
-  fieldProxy: { [key: string | number | symbol]: any } = {};
+  fieldProxy: { [key: ObjectKey]: any } = {};
   // 存放依赖于每个属性的组件实例
   fieldWatcher: {
-    [key: string | number | symbol]: Instance[];
+    [key: ObjectKey]: Instance[];
   } = {};
   parentProxyData?: ProxyData;
 
   // 读取代理对象的属性值
   proxyFieldGet(key: any): any {
     // 如果是在render函数执行的过程中，就开始收集依赖于该数据的实例
-    if (instanceArr[0]) {
+    const renderingInstance = getRenderingInstance();
+    if (renderingInstance) {
       if (!Array.isArray(this.fieldWatcher[key])) {
         this.fieldWatcher[key] = [];
       }
-      this.fieldWatcher[key].push(instanceArr[0]);
-      instanceArr[0].pushUnListenHandler(() => {
-        const index = this.fieldWatcher[key].indexOf(instanceArr[0]);
+      this.fieldWatcher[key].push(renderingInstance);
+      renderingInstance.pushUnListenHandler(() => {
+        const index = this.fieldWatcher[key].indexOf(renderingInstance);
         this.fieldWatcher[key].splice(index, 1);
       });
     }
@@ -179,9 +171,9 @@ export function getProxy(
   }
 }
 
-export function useStore<T>(defaultStore?: T): T {
+export function useReactive<T>(defaultStore?: T): T {
   if(defaultStore !== void 0 && !Array.isArray(defaultStore) && !isObject(defaultStore)) {
-    throw new Error('the param of useStore must be a object or array');
+    throw new Error('the param of useReactive must be a object or array');
   }
   return getProxy(defaultStore || {});
 }

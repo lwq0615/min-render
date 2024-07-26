@@ -1,6 +1,6 @@
-import { This, renderRoot, useStore } from "../core";
+import { renderRoot, useReactive, This } from "../core";
 
-const obj = useStore({
+const obj = useReactive({
   a: 0
 })
 
@@ -10,11 +10,11 @@ function Test3() {
   return <button onClick={() => obj.a++}>change</button>;
 }
 
-function Test2(props: any) {
+function Test2(props: any, that: This) {
   return obj.a
 }
 
-function Test(props: any, that: This) {
+function Test(props: any) {
   // this.useCreated(() => {
   //   this.count = {
   //     a: {
