@@ -10,7 +10,7 @@ function Test3() {
   return <button onClick={() => obj.a++}>change</button>;
 }
 
-function Test2(props: any, that: This) {
+function Test2(this: This, props: any) {
   return obj.a
 }
 
@@ -36,7 +36,7 @@ function Test(props: any) {
       {this.count.a.b}
       <button onClick={() => this.count.a.b++}>+++</button>
       <button onClick={() => this.count.a.b--}>---</button> */}
-      <Test2/>
+      <Test2 a="1"/>
       <Test3/>
     </div>
   );

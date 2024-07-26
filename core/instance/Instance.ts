@@ -81,8 +81,7 @@ export class Instance extends BaseInstance {
     callInstanceRenderStart(this);
     const childJsxNode = (this.jsxNode.type as Component).call(
       this.proxy,
-      this.jsxNode.props,
-      this.proxy
+      this.jsxNode.props
     );
     callInstanceRenderEnd();
     if (!isJsxNode(childJsxNode)) {

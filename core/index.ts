@@ -2,7 +2,7 @@ import { createInstance } from "./instance/Instance"
 import { useReactive } from "./proxy"
 import { useCreated, useMounted, useExpose, useRefs } from './instance/hooks'
 import { RenderRoot } from "./types/instance"
-import { This, Component } from "./types/instance"
+import type { This, Component } from "./types/instance"
 
 
 const renderRoot: RenderRoot = (jsxNode, dom) => {

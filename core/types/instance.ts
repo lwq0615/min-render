@@ -12,7 +12,7 @@ export type JsxNode = {
   props?: { [key: string]: any, children?: any}
 }
 
-export type Component = (props?: any, that?: This) => any
+export type Component = (props?: any) => any
 
 
 export enum LIFE {
@@ -29,12 +29,12 @@ export type InstanceType = RealDomInstance | Instance
 
 export type InstanceExpose = { [name: ObjectKey]: any }
 
-export type This = {
+export type This<T extends object = {}> = {
   refs: { [name: ObjectKey]: InstanceExpose | HTMLElement }
-  useRefs: () => This["refs"]
+  useRefs: () => This<T>["refs"]
   useCreated: (fun: Function) => void
   useMounted: (fun: Function) => void
   useExpose: (expose: InstanceExpose) => void
-}
+} & T
 
 export type RenderRoot = (jsxNode: JsxNode, dom: HTMLElement) => void
