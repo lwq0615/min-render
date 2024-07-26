@@ -4,9 +4,9 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const { DefinePlugin } = require("webpack");
 
 module.exports = {
-  mode: process.env.mode,
+  mode: "production",
   entry: "./src/index.tsx",
-  devtool: process.env.mode === 'development' ? 'source-map' : false,
+  devtool: false,
   output: {
     path: path.resolve(__dirname, "./test"),
     filename: "[name].js",

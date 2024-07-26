@@ -10,8 +10,8 @@
     "core/index.d.ts"
   ],
   "scripts": {
-    "dev": "cross-env mode=development webpack serve",
-    "build": "cross-env mode=production webpack --config webpack.build.js"
+    "dev": "cross-env webpack serve",
+    "build": "cross-env webpack --config webpack.build.js"
   },
   "author": "",
   "license": "ISC",
