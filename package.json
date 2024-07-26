@@ -17,6 +17,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
     "@babel/core": "^7.24.7",
     "@babel/plugin-transform-react-jsx": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
@@ -26,12 +29,8 @@
     "clean-webpack-plugin": "^4.0.0",
     "cross-env": "^7.0.3",
     "html-webpack-plugin": "^5.6.0",
-    "nodemon": "^3.1.4",
-    "react": "^18.3.1",
     "webpack": "^5.92.1",
-    "webpack-dev-server": "^5.0.4"
-  },
-  "devDependencies": {
+    "webpack-dev-server": "^5.0.4",
     "webpack-cli": "^5.1.4"
   }
 }
