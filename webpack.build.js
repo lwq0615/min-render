@@ -2,14 +2,17 @@ const path = require("path");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
 module.exports = {
-  mode: "development",
+  mode: "production",
   entry: "./core/index.ts",
   devtool: false,
+  experiments: {
+    outputModule: process.env.type === 'module'
+  },
   output: {
     path: path.resolve(__dirname, "./dist"),
-    filename: "[name].js",
+    filename: `core.${process.env.type}.js`,
     library: {
-      type: 'commonjs'
+      type: process.env.type
     }
   },
   resolve: {
@@ -27,6 +30,6 @@ module.exports = {
     ],
   },
   plugins: [
-    new CleanWebpackPlugin(),
+    process.env.type === 'commonjs' && new CleanWebpackPlugin(),
   ]
 };

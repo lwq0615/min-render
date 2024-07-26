@@ -2,7 +2,8 @@
   "name": "test",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/core.commonjs.js",
+  "module": "dist/core.module.js",
   "types": "core/index.d.ts",
   "files": [
     "dist",
@@ -11,7 +12,7 @@
   ],
   "scripts": {
     "dev": "cross-env webpack serve",
-    "build": "cross-env webpack --config webpack.build.js"
+    "build": "cross-env type=commonjs webpack --config webpack.build.js && cross-env type=module webpack --config webpack.build.js"
   },
   "author": "",
   "license": "ISC",
