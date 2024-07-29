@@ -8,7 +8,7 @@ declare namespace Types {
 
   type This = InstanceTypes.This
 
-  var Component: InstanceTypes.Component
+  type Component = InstanceTypes.Component
 
   var useReactive: UseReactive
   
