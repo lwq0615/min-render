@@ -142,6 +142,7 @@ export class Instance extends BaseInstance {
           this.reRenderChildren(childJsxNode).then(() => {
             this.life = LIFE.mounted;
             this.renderTask = null;
+            this.invokeRenderedTasks()
             resolve();
           });
         } else {
@@ -157,11 +158,24 @@ export class Instance extends BaseInstance {
           this.life = LIFE.mounted;
           this.renderTask = null;
           this.parentInstance?.setRef(this);
+          this.invokeRenderedTasks()
           resolve();
         }
       });
     });
     return this.renderTask;
+  }
+  renderedTasks: Function[] = []
+  useRendered: This["useRendered"] = function (fun: Function) {
+    this.renderedTasks.push(fun)
+  }
+  invokeRenderedTasks() {
+    const funs = this.renderedTasks.reverse()
+    this.renderedTasks = []
+    let fun = null
+    while(fun = funs.pop()) {
+      fun()
+    }
   }
   destroyDom(isTop: boolean) {
     super.destroyDom(isTop)

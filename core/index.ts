@@ -1,6 +1,6 @@
 import { createInstance } from "./instance/Instance"
 import { useReactive } from "./proxy"
-import { useCreated, useMounted, useExpose, useRefs } from './instance/hooks'
+import { useCreated, useMounted, useExpose, useRefs, useRendered } from './instance/hooks'
 import { RenderRoot } from "./types/instance"
 import type { This, Component } from "./types/instance"
 
@@ -17,5 +17,6 @@ export {
   useCreated,
   useMounted,
   useExpose,
-  useRefs
+  useRefs,
+  useRendered
 }

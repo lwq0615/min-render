@@ -35,6 +35,7 @@ export type This<T extends object = {}> = {
   useCreated: (fun: Function) => void
   useMounted: (fun: Function) => void
   useExpose: (expose: InstanceExpose) => void
+  useRendered: (fun: Function) => void
 } & T
 
 export type RenderRoot = (jsxNode: JsxNode, dom: HTMLElement) => void

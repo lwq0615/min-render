@@ -1,14 +1,14 @@
-import { Component, RenderRoot, This } from './types/instance'
+import * as InstanceTypes from './types/instance'
 import { UseReactive } from './types/proxy'
 
 
 declare namespace Types {
 
-  var renderRoot: RenderRoot
+  var renderRoot: InstanceTypes.RenderRoot
 
-  var This: This
+  type This = InstanceTypes.This
 
-  var Component: Component
+  var Component: InstanceTypes.Component
 
   var useReactive: UseReactive
   
@@ -19,6 +19,8 @@ declare namespace Types {
   var useExpose: This['useExpose']
   
   var useRefs: This['useRefs']
+
+  var useRendered: This['useRendered']
 
 }
 

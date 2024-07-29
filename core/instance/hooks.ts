@@ -25,3 +25,7 @@ export function useExpose(expose: InstanceExpose) {
 export function useRefs() {
   return getRendering().useRefs()
 }
+
+export function useRendered(fun: Function) {
+  return getRendering().useRendered(fun)
+}
