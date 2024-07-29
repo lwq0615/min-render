@@ -53,26 +53,26 @@ export class Instance extends BaseInstance {
       fun()
     }
   };
-  mountedLifeHandles: Function[] = [];
+  #mountedLifeHandles: Function[] = [];
   useMounted: This["useMounted"] = function (fun) {
     if (this.life === LIFE.create) {
-      this.mountedLifeHandles.push(fun);
+      this.#mountedLifeHandles.push(fun);
     }
   };
   invokeMountedLifeHandles(): void {
-    this.mountedLifeHandles.forEach((fun) => {
+    this.#mountedLifeHandles.forEach((fun) => {
       fun();
     });
   }
-  unListenHandles: Function[] = [];
+  #unListenHandles: Function[] = [];
   // 增加一个取消监听响应式数据的函数，用于取消监听
   pushUnListenHandler(handle: Function) {
-    this.unListenHandles.push(handle);
+    this.#unListenHandles.push(handle);
   }
   // 取消与实例相关的响应式监听
   invokeUnListenHandles(): void {
     let handle = null;
-    while ((handle = this.unListenHandles.pop())) {
+    while ((handle = this.#unListenHandles.pop())) {
       handle?.();
     }
   }
@@ -105,14 +105,14 @@ export class Instance extends BaseInstance {
       }
     }
   }
-  useRefs: This["useRefs"] = function () {
-    return this.refs;
-  };
   removeRef(instance: BaseInstance) {
     if (typeof instance.jsxNode !== "string" && instance.jsxNode?.ref) {
       delete this.refs[instance.jsxNode.ref];
     }
   }
+  useRefs: This["useRefs"] = function () {
+    return this.refs;
+  };
   expose: InstanceExpose = {};
   useExpose: This["useExpose"] = function (expose) {
     if (!isObject(expose)) {
@@ -126,12 +126,12 @@ export class Instance extends BaseInstance {
       this.parentDom.appendChild(dom);
     }
   }
-  renderTask: Promise<void>;
+  #renderTask: Promise<void>;
   renderDom(): Promise<void> {
-    if (this.renderTask) {
+    if (this.#renderTask) {
       return;
     }
-    this.renderTask = new Promise<void>((resolve) => {
+    this.#renderTask = new Promise<void>((resolve) => {
       Promise.resolve().then(async () => {
         if (!this.render) {
           return;
@@ -141,7 +141,7 @@ export class Instance extends BaseInstance {
           this.life = LIFE.update;
           this.reRenderChildren(childJsxNode).then(() => {
             this.life = LIFE.mounted;
-            this.renderTask = null;
+            this.#renderTask = null;
             this.invokeRenderedTasks()
             resolve();
           });
@@ -156,22 +156,22 @@ export class Instance extends BaseInstance {
             this.appendDomToParentDom();
           }
           this.life = LIFE.mounted;
-          this.renderTask = null;
+          this.#renderTask = null;
           this.parentInstance?.setRef(this);
           this.invokeRenderedTasks()
           resolve();
         }
       });
     });
-    return this.renderTask;
+    return this.#renderTask;
   }
-  renderedTasks: Function[] = []
+  #renderedTasks: Function[] = []
   useRendered: This["useRendered"] = function (fun: Function) {
-    this.renderedTasks.push(fun)
+    this.#renderedTasks.push(fun)
   }
   invokeRenderedTasks() {
-    const funs = this.renderedTasks.reverse()
-    this.renderedTasks = []
+    const funs = this.#renderedTasks.reverse()
+    this.#renderedTasks = []
     let fun = null
     while(fun = funs.pop()) {
       fun()
