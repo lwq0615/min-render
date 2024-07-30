@@ -53,7 +53,7 @@ class ProxyData {
   }
   // 设置代理对象的属性值
   proxyFieldSet(key: any, value: any): boolean {
-    // 设置的值没有改变，不做处理
+    // 设置的值没有改变，不做处理，避免无效渲染
     if (Object.is(value, this.target[key])) {
       return true;
     }
