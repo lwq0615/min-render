@@ -26,8 +26,8 @@ export function useRefs() {
   return getRendering().useRefs()
 }
 
-export function useRendered(fun: Function) {
-  return getRendering().useRendered(fun)
+export function useNext(fun: Function) {
+  return getRendering().useNext(fun)
 }
 
 export function useWatch(fun: Watcher['handler'], depends: Watcher['depends']) {

@@ -127,7 +127,7 @@ function getArrayProxy(
   });
 }
 
-const proxyHooks: Array<keyof This> = ['useMounted', 'useCreated', 'useExpose', 'useRendered', 'useWatch'];
+const proxyHooks: Array<keyof This> = ['useMounted', 'useCreated', 'useExpose', 'useNext', 'useWatch'];
 const proxyFields: Array<keyof This> = ['refs'];
 function getInstanceProxy(instance: Instance) {
   const obj = new ThisProperties();

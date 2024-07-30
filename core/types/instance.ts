@@ -35,7 +35,7 @@ export type This<T extends object = {}> = {
   useCreated: (fun: Function) => void
   useMounted: (fun: Function) => void
   useExpose: (expose: InstanceExpose) => void
-  useRendered: (fun: Function) => void
+  useNext: (fun: Function) => void
   useWatch: (fun: Watcher['handler'], depends: Watcher['depends']) => void
 } & T
 

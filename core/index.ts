@@ -1,6 +1,6 @@
 import { createInstance } from "./instance/Instance"
 import { useReactive } from "./proxy"
-import { useCreated, useMounted, useExpose, useRefs, useRendered, useWatch } from './instance/hooks'
+import { useCreated, useMounted, useExpose, useRefs, useNext, useWatch } from './instance/hooks'
 import { RenderRoot } from "./types/instance"
 import type { This, Component } from "./types/instance"
 import { defineThisProperties } from "./instance/prototype"
@@ -19,7 +19,7 @@ export {
   useMounted,
   useExpose,
   useRefs,
-  useRendered,
+  useNext,
   defineThisProperties,
   useWatch
 }

@@ -20,7 +20,7 @@ declare namespace Types {
   
   var useRefs: This['useRefs']
 
-  var useRendered: This['useRendered']
+  var useNext: This['useNext']
 
   var useWatch: This['useWatch']
 

@@ -166,7 +166,7 @@ export class Instance extends BaseInstance {
     return this.#renderTask;
   }
   #renderedTasks: Function[] = [];
-  useRendered: This['useRendered'] = function (fun: Function) {
+  useNext: This['useNext'] = function (fun: Function) {
     this.#renderedTasks.push(fun);
   };
   invokeRenderedTasks() {
