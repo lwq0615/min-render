@@ -6,15 +6,14 @@ import {
   LIFE,
   RealDom,
   InstanceExpose,
-} from "../types/instance";
-import { isJsxNode, isObject } from "../utils";
-import { appendRealDomByJsxNode } from "../dom";
-import {
-  getProxy,
-} from "../proxy";
-import { BaseInstance } from "./BaseInstance";
-import { RealDomInstance } from "./RealDomInstance";
-import { callInstanceRenderEnd, callInstanceRenderStart } from "./renderDepend";
+  Watcher,
+} from '../types/instance';
+import { isJsxNode, isObject } from '../utils';
+import { appendRealDomByJsxNode } from '../dom';
+import { getProxy } from '../proxy';
+import { BaseInstance } from './BaseInstance';
+import { RealDomInstance } from './RealDomInstance';
+import { callInstanceRenderEnd, callInstanceRenderStart } from './renderDepend';
 
 /**
  * 创建组件实例
@@ -48,13 +47,13 @@ export class Instance extends BaseInstance {
   setProxy(proxy: Instance) {
     this.proxy = proxy;
   }
-  useCreated: This["useCreated"] = function (fun) {
+  useCreated: This['useCreated'] = function (fun) {
     if (this.life === LIFE.create) {
-      fun()
+      fun();
     }
   };
   #mountedLifeHandles: Function[] = [];
-  useMounted: This["useMounted"] = function (fun) {
+  useMounted: This['useMounted'] = function (fun) {
     if (this.life === LIFE.create) {
       this.#mountedLifeHandles.push(fun);
     }
@@ -79,6 +78,7 @@ export class Instance extends BaseInstance {
   render: Component = function () {
     this.invokeUnListenHandles();
     callInstanceRenderStart(this);
+    this.#watcherIndex = 0
     const childJsxNode = (this.jsxNode.type as Component).call(
       this.proxy,
       this.jsxNode.props
@@ -88,13 +88,13 @@ export class Instance extends BaseInstance {
       return String(childJsxNode);
     }
     if (this.life === LIFE.create) {
-      this.life = LIFE.created
+      this.life = LIFE.created;
     }
     return childJsxNode;
   };
-  refs: This["refs"] = {};
+  refs: This['refs'] = {};
   setRef(instance: InstanceType) {
-    if (typeof instance.jsxNode !== "string" && instance.jsxNode?.ref) {
+    if (typeof instance.jsxNode !== 'string' && instance.jsxNode?.ref) {
       if (this.refs[instance.jsxNode.ref]) {
         throw new Error(`ref ${instance.jsxNode.ref} is already exists`);
       }
@@ -106,17 +106,17 @@ export class Instance extends BaseInstance {
     }
   }
   removeRef(instance: BaseInstance) {
-    if (typeof instance.jsxNode !== "string" && instance.jsxNode?.ref) {
+    if (typeof instance.jsxNode !== 'string' && instance.jsxNode?.ref) {
       delete this.refs[instance.jsxNode.ref];
     }
   }
-  useRefs: This["useRefs"] = function () {
+  useRefs: This['useRefs'] = function () {
     return this.refs;
   };
   expose: InstanceExpose = {};
-  useExpose: This["useExpose"] = function (expose) {
+  useExpose: This['useExpose'] = function (expose) {
     if (!isObject(expose)) {
-      throw new Error("expose must be object");
+      throw new Error('expose must be object');
     }
     Object.keys(this.expose).forEach((key) => delete this.expose[key]);
     Object.keys(expose).forEach((key) => (this.expose[key] = expose[key]));
@@ -142,7 +142,7 @@ export class Instance extends BaseInstance {
           this.reRenderChildren(childJsxNode).then(() => {
             this.life = LIFE.mounted;
             this.#renderTask = null;
-            this.invokeRenderedTasks()
+            this.invokeRenderedTasks();
             resolve();
           });
         } else {
@@ -158,32 +158,32 @@ export class Instance extends BaseInstance {
           this.life = LIFE.mounted;
           this.#renderTask = null;
           this.parentInstance?.setRef(this);
-          this.invokeRenderedTasks()
+          this.invokeRenderedTasks();
           resolve();
         }
       });
     });
     return this.#renderTask;
   }
-  #renderedTasks: Function[] = []
-  useRendered: This["useRendered"] = function (fun: Function) {
-    this.#renderedTasks.push(fun)
-  }
+  #renderedTasks: Function[] = [];
+  useRendered: This['useRendered'] = function (fun: Function) {
+    this.#renderedTasks.push(fun);
+  };
   invokeRenderedTasks() {
-    const funs = this.#renderedTasks.reverse()
-    this.#renderedTasks = []
-    let fun = null
-    while(fun = funs.pop()) {
-      fun()
+    const funs = this.#renderedTasks.reverse();
+    this.#renderedTasks = [];
+    let fun = null;
+    while ((fun = funs.pop())) {
+      fun();
     }
   }
   destroyDom(isTop: boolean) {
-    super.destroyDom(isTop)
-    this.invokeUnListenHandles()
-    this.life = LIFE.destroy
+    super.destroyDom(isTop);
+    this.invokeUnListenHandles();
+    this.life = LIFE.destroy;
   }
   async reRenderProps(newJsxNode: JsxNode) {
-    if (typeof this.jsxNode === "string") {
+    if (typeof this.jsxNode === 'string') {
       return;
     }
     if (this instanceof Instance) {
@@ -191,4 +191,29 @@ export class Instance extends BaseInstance {
       await this.renderDom();
     }
   }
+  #watcherIndex: number = 0;
+  #watchers: Watcher[] = [];
+  useWatch(handler: Watcher['handler'], depends: Watcher['depends']) {
+    const oldWatcher = this.#watchers[this.#watcherIndex];
+    if(oldWatcher) {
+      if(Array.isArray(oldWatcher.depends)) {
+       for (const i in oldWatcher.depends) {
+        const dep = oldWatcher.depends[i];
+        if(!Object.is(dep, depends[i])) {
+          handler(oldWatcher.depends, depends)
+          break
+        }
+       }
+      }else {
+        if(!Object.is(oldWatcher.depends, depends)) {
+          handler(oldWatcher.depends, depends)
+        }
+      }
+    }
+    this.#watchers[this.#watcherIndex] = {
+      handler,
+      depends,
+    };
+    this.#watcherIndex++
+  };
 }

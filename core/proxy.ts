@@ -1,4 +1,5 @@
 import { Instance } from './instance/Instance';
+import { ThisProperties } from './instance/prototype';
 import { getRenderingInstance } from './instance/renderDepend';
 import { LIFE, This } from './types/instance';
 import { ObjectKey } from './types/object';
@@ -126,10 +127,10 @@ function getArrayProxy(
   });
 }
 
-const proxyHooks: Array<keyof This> = ['useMounted', 'useCreated', 'useExpose', 'useRendered'];
+const proxyHooks: Array<keyof This> = ['useMounted', 'useCreated', 'useExpose', 'useRendered', 'useWatch'];
 const proxyFields: Array<keyof This> = ['refs'];
 function getInstanceProxy(instance: Instance) {
-  const obj = {} as any;
+  const obj = new ThisProperties();
   proxyHooks.forEach((hook) => {
     obj[hook] = (instance as any)[hook].bind(instance);
   });

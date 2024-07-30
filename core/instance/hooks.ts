@@ -1,4 +1,4 @@
-import { InstanceExpose } from "core/types/instance";
+import { InstanceExpose, Watcher } from "core/types/instance";
 import { getRenderingInstance } from "./renderDepend";
 import { Instance } from "./Instance";
 
@@ -28,4 +28,8 @@ export function useRefs() {
 
 export function useRendered(fun: Function) {
   return getRendering().useRendered(fun)
+}
+
+export function useWatch(fun: Watcher['handler'], depends: Watcher['depends']) {
+  return getRendering().useWatch(fun, depends)
 }

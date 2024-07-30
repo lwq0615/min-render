@@ -36,6 +36,12 @@ export type This<T extends object = {}> = {
   useMounted: (fun: Function) => void
   useExpose: (expose: InstanceExpose) => void
   useRendered: (fun: Function) => void
+  useWatch: (fun: Watcher['handler'], depends: Watcher['depends']) => void
 } & T
 
 export type RenderRoot = (jsxNode: JsxNode, dom: HTMLElement) => void
+
+export type Watcher = {
+  depends: unknown[],
+  handler: (oldDepends: Watcher['depends'], newDepends: Watcher['depends']) => void
+}

@@ -1,17 +1,35 @@
-import { renderRoot, useReactive, This } from "../core";
+import { renderRoot, useReactive, This, defineThisProperties } from "../core";
+
+defineThisProperties({
+  log: console.log
+})
 
 const obj = useReactive({
-  a: 0
+  a: 0,
+  b: 1
 })
 
 
 
 function Test3() {
-  return <button onClick={() => obj.a++}>change</button>;
+  return (
+    <div>
+      <button onClick={() => obj.a++}>changea</button>
+      <button onClick={() => obj.b++}>changeb</button>
+    </div>
+  );
 }
 
 function Test2(this: This, props: any) {
-  return obj.a
+  this.useWatch((oldVal, newVal) => {
+    console.log(oldVal, newVal);
+  }, [obj.b, obj.a])
+  return (
+    <div>
+      <div>{obj.a}</div>
+      <div>{obj.b}</div>
+    </div>
+  )
 }
 
 function Test(props: any) {

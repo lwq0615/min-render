@@ -22,6 +22,10 @@ declare namespace Types {
 
   var useRendered: This['useRendered']
 
+  var useWatch: This['useWatch']
+
+  function defineThisProperties<T extends Object>(obj: T): void
+
 }
 
 
