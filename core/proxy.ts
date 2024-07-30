@@ -5,7 +5,6 @@ import { LIFE, This } from './types/instance';
 import { ObjectKey } from './types/object';
 import { isObject } from './utils';
 
-
 class ProxyData {
   constructor(target: any, parentProxyData?: ProxyData, key?: ObjectKey) {
     this.target = target;
@@ -54,6 +53,10 @@ class ProxyData {
   }
   // 设置代理对象的属性值
   proxyFieldSet(key: any, value: any): boolean {
+    // 设置的值没有改变，不做处理
+    if (Object.is(value, this.target[key])) {
+      return true;
+    }
     const proxy = getProxy(value, this, key);
     // 代理后的值与原来相等，说明是无需代理的对象
     if (this.target[key] === proxy) {
@@ -127,7 +130,13 @@ function getArrayProxy(
   });
 }
 
-const proxyHooks: Array<keyof This> = ['useMounted', 'useCreated', 'useExpose', 'useNext', 'useWatch'];
+const proxyHooks: Array<keyof This> = [
+  'useMounted',
+  'useCreated',
+  'useExpose',
+  'useNext',
+  'useWatch',
+];
 const proxyFields: Array<keyof This> = ['refs'];
 function getInstanceProxy(instance: Instance) {
   const obj = new ThisProperties();
@@ -173,7 +182,11 @@ export function getProxy(
 }
 
 export function useReactive<T>(defaultStore?: T): T {
-  if(defaultStore !== void 0 && !Array.isArray(defaultStore) && !isObject(defaultStore)) {
+  if (
+    defaultStore !== void 0 &&
+    !Array.isArray(defaultStore) &&
+    !isObject(defaultStore)
+  ) {
     throw new Error('the param of useReactive must be a object or array');
   }
   return getProxy(defaultStore || {});
