@@ -32,29 +32,13 @@ function Test2(this: This, props: any) {
   )
 }
 
-function Test(props: any) {
-  // this.useCreated(() => {
-  //   this.count = {
-  //     a: {
-  //       b: 1
-  //     }
-  //   };
-  // });
-  // console.log(obj);
-  // this.useMounted(() => {
-    // this.count = 1;
-    // this.count.a
-  // });
-  // const unWatch = this.useWatch(() => [this.count], () => {
-  //   console.log(123);
-  // })
+function Test(this: This, props: any) {
+  this.useMounted(() => {
+    console.log(this);
+  })
   return (
     <div id="a1" ref="a1">
-      {/* {this.count}
-      {this.count.a.b}
-      <button onClick={() => this.count.a.b++}>+++</button>
-      <button onClick={() => this.count.a.b--}>---</button> */}
-      <Test2 a="1"/>
+      <Test2 a="1" ref="test2"/>
       <Test3/>
     </div>
   );

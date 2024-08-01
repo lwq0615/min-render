@@ -7,6 +7,7 @@ import {
   RealDom,
   InstanceExpose,
   Watcher,
+  Refs,
 } from '../types/instance';
 import { isJsxNode, isObject } from '../utils';
 import { appendRealDomByJsxNode } from '../dom';
@@ -14,6 +15,7 @@ import { getProxy } from '../proxy';
 import { BaseInstance } from './BaseInstance';
 import { RealDomInstance } from './RealDomInstance';
 import { callInstanceRenderEnd, callInstanceRenderStart } from './renderDepend';
+import { ObjectKey } from 'core/types/object';
 
 /**
  * 创建组件实例
@@ -78,7 +80,7 @@ export class Instance extends BaseInstance {
   render: Component = function () {
     this.invokeUnListenHandles();
     callInstanceRenderStart(this);
-    this.#watcherIndex = 0
+    this.#watcherIndex = 0;
     const childJsxNode = (this.jsxNode.type as Component).call(
       this.proxy,
       this.jsxNode.props
@@ -92,34 +94,38 @@ export class Instance extends BaseInstance {
     }
     return childJsxNode;
   };
-  refs: This['refs'] = {};
+  #refInstances: { [name: ObjectKey]: InstanceType } = {};
   setRef(instance: InstanceType) {
     if (typeof instance.jsxNode !== 'string' && instance.jsxNode?.ref) {
-      if (this.refs[instance.jsxNode.ref]) {
+      if (this.#refInstances[instance.jsxNode.ref]) {
         throw new Error(`ref ${instance.jsxNode.ref} is already exists`);
       }
-      if (instance instanceof Instance) {
-        this.refs[instance.jsxNode.ref] = instance.expose;
-      } else if (instance instanceof RealDomInstance) {
-        this.refs[instance.jsxNode.ref] = instance.dom;
-      }
+      this.#refInstances[instance.jsxNode.ref] = instance;
     }
   }
   removeRef(instance: BaseInstance) {
     if (typeof instance.jsxNode !== 'string' && instance.jsxNode?.ref) {
-      delete this.refs[instance.jsxNode.ref];
+      delete this.#refInstances[instance.jsxNode.ref];
     }
   }
   useRefs: This['useRefs'] = function () {
-    return this.refs;
+    const refs: Refs = {}
+    Object.keys(this.#refInstances).forEach((key) => {
+      const instance = this.#refInstances[key];
+      if (instance instanceof Instance) {
+        refs[key] = instance.expose;
+      } else if (instance instanceof RealDomInstance) {
+        refs[key] = instance.dom;
+      }
+    });
+    return refs
   };
   expose: InstanceExpose = {};
   useExpose: This['useExpose'] = function (expose) {
     if (!isObject(expose)) {
       throw new Error('expose must be object');
     }
-    Object.keys(this.expose).forEach((key) => delete this.expose[key]);
-    Object.keys(expose).forEach((key) => (this.expose[key] = expose[key]));
+    this.expose = expose || {};
   };
   appendDomToParentDom() {
     for (const dom of this.getRealDoms()) {
@@ -195,18 +201,18 @@ export class Instance extends BaseInstance {
   #watchers: Watcher[] = [];
   useWatch(handler: Watcher['handler'], depends: Watcher['depends']) {
     const oldWatcher = this.#watchers[this.#watcherIndex];
-    if(oldWatcher) {
-      if(Array.isArray(oldWatcher.depends)) {
-       for (const i in oldWatcher.depends) {
-        const dep = oldWatcher.depends[i];
-        if(!Object.is(dep, depends[i])) {
-          handler(oldWatcher.depends, depends)
-          break
+    if (oldWatcher) {
+      if (Array.isArray(oldWatcher.depends)) {
+        for (const i in oldWatcher.depends) {
+          const dep = oldWatcher.depends[i];
+          if (!Object.is(dep, depends[i])) {
+            handler(oldWatcher.depends, depends);
+            break;
+          }
         }
-       }
-      }else {
-        if(!Object.is(oldWatcher.depends, depends)) {
-          handler(oldWatcher.depends, depends)
+      } else {
+        if (!Object.is(oldWatcher.depends, depends)) {
+          handler(oldWatcher.depends, depends);
         }
       }
     }
@@ -214,6 +220,6 @@ export class Instance extends BaseInstance {
       handler,
       depends,
     };
-    this.#watcherIndex++
-  };
+    this.#watcherIndex++;
+  }
 }

@@ -3,7 +3,7 @@ import { ThisProperties } from './instance/prototype';
 import { getRenderingInstance } from './instance/renderDepend';
 import { LIFE, This } from './types/instance';
 import { ObjectKey } from './types/object';
-import { isObject } from './utils';
+import { isFunction, isObject } from './utils';
 
 class ProxyData {
   constructor(target: any, parentProxyData?: ProxyData, key?: ObjectKey) {
@@ -130,33 +130,33 @@ function getArrayProxy(
   });
 }
 
+
 const proxyHooks: Array<keyof This> = [
   'useMounted',
   'useCreated',
   'useExpose',
   'useNext',
   'useWatch',
+  'useRefs',
+  'refs'
 ];
-const proxyFields: Array<keyof This> = ['refs'];
 function getInstanceProxy(instance: Instance) {
-  const obj = new ThisProperties();
-  proxyHooks.forEach((hook) => {
-    obj[hook] = (instance as any)[hook].bind(instance);
-  });
-  proxyFields.forEach((key) => {
-    obj[key] = instance[key];
-  });
+  const obj = new ThisProperties(instance);
   const proxy = getProxy(obj);
   return new Proxy(obj, {
     get(target, key: any) {
-      if (proxyHooks.concat(proxyFields).includes(key)) {
-        return obj[key];
+      if (proxyHooks.includes(key)) {
+        if(isFunction(obj[key])) {
+          return obj[key].bind(obj)
+        }else {
+          return obj[key];
+        }
       } else {
         return proxy[key];
       }
     },
     set(target, key, value) {
-      if (proxyHooks.concat(proxyFields).includes(key as any)) {
+      if (proxyHooks.includes(key as any)) {
         return false;
       }
       proxy[key] = value;

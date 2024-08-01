@@ -41,3 +41,7 @@ export function isComponent(obj: JsxNode) {
 export function isObject(obj: any) {
   return Object.prototype.toString.call(obj) === "[object Object]"
 }
+
+export function isFunction(obj: any) {
+  return typeof obj === "function"
+}

@@ -29,9 +29,11 @@ export type InstanceType = RealDomInstance | Instance
 
 export type InstanceExpose = { [name: ObjectKey]: any }
 
+export type Refs = { [name: ObjectKey]: InstanceExpose | HTMLElement }
+
 export type This<T extends object = {}> = {
-  refs: { [name: ObjectKey]: InstanceExpose | HTMLElement }
-  useRefs: () => This<T>["refs"]
+  refs: Refs
+  useRefs: () => Refs
   useCreated: (fun: Function) => void
   useMounted: (fun: Function) => void
   useExpose: (expose: InstanceExpose) => void
