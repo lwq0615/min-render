@@ -5,7 +5,7 @@ import { Instance } from "./Instance";
 function getRendering(): Instance {
   const renderingInstance = getRenderingInstance();
   if(!renderingInstance) {
-    throw new Error("hook function must be called in Component function")
+    throw new Error("hook function must be called in Component function and it's must be sync run")
   }
   return renderingInstance
 }

@@ -130,7 +130,6 @@ function getArrayProxy(
   });
 }
 
-
 const proxyHooks: Array<keyof This> = [
   'useMounted',
   'useCreated',
@@ -138,26 +137,34 @@ const proxyHooks: Array<keyof This> = [
   'useNext',
   'useWatch',
   'useRefs',
-  'refs'
+  'refs',
 ];
 function getInstanceProxy(instance: Instance) {
-  const obj = new ThisProperties(instance);
+  const obj = new ThisProperties();
+  proxyHooks.forEach((key) => {
+    Object.defineProperty(obj, key, {
+      get() {
+        if (isFunction(instance[key])) {
+          return (instance[key] as Function).bind(instance);
+        } else {
+          return instance[key];
+        }
+      },
+      enumerable: false,
+    });
+  });
   const proxy = getProxy(obj);
   return new Proxy(obj, {
     get(target, key: any) {
       if (proxyHooks.includes(key)) {
-        if(isFunction(obj[key])) {
-          return obj[key].bind(obj)
-        }else {
-          return obj[key];
-        }
+        return obj[key];
       } else {
         return proxy[key];
       }
     },
     set(target, key, value) {
       if (proxyHooks.includes(key as any)) {
-        return false;
+        throw new Error(`fields of this [${proxyHooks.join(", ")}] is readonly`)
       }
       proxy[key] = value;
       return true;

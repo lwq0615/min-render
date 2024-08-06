@@ -40,7 +40,7 @@ export function createInstance(
 }
 
 // 自定义组件虚拟dom
-export class Instance extends BaseInstance {
+export class Instance extends BaseInstance implements This {
   constructor(parentDom: RealDom, jsxNode: JsxNode, parentInstance?: Instance) {
     super(jsxNode, parentDom, parentInstance);
   }
@@ -107,6 +107,9 @@ export class Instance extends BaseInstance {
     if (typeof instance.jsxNode !== 'string' && instance.jsxNode?.ref) {
       delete this.#refInstances[instance.jsxNode.ref];
     }
+  }
+  get refs() {
+    return this.useRefs()
   }
   useRefs: This['useRefs'] = function () {
     const refs: Refs = {}
