@@ -19,7 +19,7 @@ class ProxyData {
   fieldProxy: { [key: ObjectKey]: any } = {};
   // 存放依赖于每个属性的组件实例
   fieldWatcher: {
-    [key: ObjectKey]: Instance[];
+    [key: ObjectKey]: Set<Instance>;
   } = {};
   parentProxyData?: ProxyData;
 
@@ -28,13 +28,12 @@ class ProxyData {
     // 如果是在render函数执行的过程中，就开始收集依赖于该数据的实例
     const renderingInstance = getRenderingInstance();
     if (renderingInstance) {
-      if (!Array.isArray(this.fieldWatcher[key])) {
-        this.fieldWatcher[key] = [];
+      if (!(this.fieldWatcher[key] instanceof Set)) {
+        this.fieldWatcher[key] = new Set();
       }
-      this.fieldWatcher[key].push(renderingInstance);
+      this.fieldWatcher[key].add(renderingInstance);
       renderingInstance.pushUnListenHandler(() => {
-        const index = this.fieldWatcher[key].indexOf(renderingInstance);
-        this.fieldWatcher[key].splice(index, 1);
+        this.fieldWatcher[key].delete(renderingInstance);
       });
     }
     // 递归获取代理对象
