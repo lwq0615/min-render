@@ -107,9 +107,7 @@ function getArrayProxy(
   const proxyData = new ProxyData(arr, parentProxyData, key);
   return new Proxy(arr, {
     get(target, key: any) {
-      if (typeof key === 'symbol') {
-        return target[key as any];
-      } else if (Number(key) == key) {
+      if (Number(key) == key) {
         return proxyData.proxyFieldGet(key);
       } else {
         return target[key];
