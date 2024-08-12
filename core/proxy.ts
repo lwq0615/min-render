@@ -116,10 +116,7 @@ function getArrayProxy(
       }
     },
     set(target, key: any, value) {
-      if (typeof key === 'symbol') {
-        target[key as any] = value;
-        return true;
-      } else if (Number(key) == key) {
+      if (Number(key) == key) {
         return proxyData.proxyFieldSet(key, value);
       } else {
         target[key] = value;
