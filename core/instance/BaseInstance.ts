@@ -133,7 +133,7 @@ export class BaseInstance {
     }
     let offset = 0;
     if (this instanceof Instance) {
-      offset += [...parentDom.childNodes].indexOf(this.getRealDoms()[0]);
+      offset += Array.from(parentDom.childNodes).indexOf(this.getRealDoms()[0]);
     }
     const children: InstanceType[] = [];
     // 准备新的节点
@@ -170,11 +170,11 @@ export class BaseInstance {
     // 排列插入新的节点
     doms.forEach((dom, i) => {
       // 不存在该元素
-      if ([...parentDom.childNodes].indexOf(dom) === -1) {
+      if (Array.from(parentDom.childNodes).indexOf(dom) === -1) {
         parentDom.insertBefore(dom, parentDom.childNodes[i + offset]);
       }
       // 存在但是位置不对
-      else if ([...parentDom.childNodes].indexOf(dom) != i + offset) {
+      else if (Array.from(parentDom.childNodes).indexOf(dom) != i + offset) {
         parentDom.insertBefore(dom, parentDom.childNodes[i + offset]);
       }
     });

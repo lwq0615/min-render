@@ -75,7 +75,7 @@ class ProxyData {
         instance.renderDom();
       }
     });
-    this.callCurrentWatcherUpdate();
+    // this.callCurrentWatcherUpdate();
   }
   // 更新依赖于当前代理对象的实例
   callCurrentWatcherUpdate() {

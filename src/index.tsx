@@ -11,35 +11,29 @@ const obj = useReactive({
 
 
 
-function Test3() {
+function Test3(props: {obj: any}) {
   return (
     <div>
-      <button onClick={() => obj.a++}>changea</button>
-      <button onClick={() => obj.b++}>changeb</button>
+      {JSON.stringify(props.obj)}
     </div>
   );
 }
 
 function Test2(this: This, props: any) {
-  this.useWatch((oldVal, newVal) => {
-    console.log(oldVal, newVal);
-  }, [obj.b, obj.a])
   return (
     <div>
       <div>{obj.a}</div>
       <div>{obj.b}</div>
+      <button onClick={() => obj.a++}>change</button>
     </div>
   )
 }
 
 function Test(this: This, props: any) {
-  this.useMounted(() => {
-    console.log(this);
-  })
   return (
     <div id="a1" ref="a1">
-      <Test2 a="1" ref="test2"/>
-      <Test3/>
+      <Test2/>
+      <Test3 obj={obj}/>
     </div>
   );
 }

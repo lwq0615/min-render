@@ -49,6 +49,7 @@ export class RealDomInstance extends BaseInstance {
   }
   // 渲染实例真实dom
   async renderDom(): Promise<void> {
+    // 一个组件内的最顶层元素
     const isTop = this.parentInstance.parentDom === this.parentDom;
     if (!isJsxNode(this.jsxNode)) {
       const node = document.createTextNode(String(this.jsxNode));

@@ -1,6 +1,7 @@
 {
   "exclude": ["node_modules/**"],
   "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
     "baseUrl": ".",
     "outDir": "dist",
     "noImplicitAny": true, // 不允许隐式any类型
