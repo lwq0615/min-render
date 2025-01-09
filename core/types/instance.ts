@@ -50,7 +50,7 @@ type HookTypes = {
   useNext: (fun: Function) => void
   useWatch: (fun: Watcher['handler'], depends: Watcher['depends']) => void
 }
-export type This<T extends object = {}> = { [K in (typeof hookKeys)[number]]: HookTypes[K] } & T
+export type This<T extends object = Record<keyof any, any>> = { [K in (typeof hookKeys)[number]]: HookTypes[K] } & T
 
 export type RenderRoot = (jsxNode: JsxNode, dom: HTMLElement) => void
 

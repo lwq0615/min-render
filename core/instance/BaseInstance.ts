@@ -129,7 +129,7 @@ export class BaseInstance {
     newJsxNodes = fragmentJsxNodeTran(newJsxNodes);
     let parentDom = this.parentDom;
     if (this instanceof RealDomInstance) {
-      parentDom = (this as unknown as RealDomInstance).dom;
+      parentDom = this.dom;
     }
     let offset = 0;
     if (this instanceof Instance) {

@@ -2,6 +2,7 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const { DefinePlugin } = require("webpack");
+const FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin')
 
 module.exports = {
   mode: "development",
@@ -17,7 +18,7 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /[\.tsx?|\.jsx?]$/,
+        test: /[\.tsx?|\.jsx?|\.ts?|\.js?]$/,
         exclude: /node_modules/,
         use: {
           loader: "babel-loader",
@@ -25,6 +26,7 @@ module.exports = {
       },
     ],
   },
+  stats: 'errors-only',
   plugins: [
     new CleanWebpackPlugin(),
     new DefinePlugin({}),
@@ -33,6 +35,7 @@ module.exports = {
       filename: "index.html",
       title: "jsx"
     }),
+    new FriendlyErrorsWebpackPlugin(),
   ],
   devServer: {
     static: path.resolve(__dirname, "./public"),
