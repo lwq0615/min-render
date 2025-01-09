@@ -24,7 +24,7 @@ export async function appendRealDomByJsxNode(
   if(Array.isArray(jsxNode)) {
     const children = []
     for (const item of jsxNode) {
-       children.push(...(await appendRealDomByJsxNode(item, parentDom, instance)))
+      children.push(...(await appendRealDomByJsxNode(item, parentDom, instance)))
     }
     return children
   }

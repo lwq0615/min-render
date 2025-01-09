@@ -142,9 +142,6 @@ export class Instance extends BaseInstance implements This {
     }
     this.#renderTask = new Promise<void>((resolve) => {
       Promise.resolve().then(async () => {
-        if (!this.render) {
-          return;
-        }
         const childJsxNode = this.render();
         if (this.life >= LIFE.mounted) {
           this.life = LIFE.update;

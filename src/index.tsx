@@ -12,11 +12,7 @@ const obj = useReactive({
 
 
 function Test3(props: {obj: any}) {
-  return (
-    <div>
-      {JSON.stringify(props.obj)}
-    </div>
-  );
+  return 123
 }
 
 function Test2(this: This, props: any) {
