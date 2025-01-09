@@ -1,7 +1,7 @@
 import { Instance } from './instance/Instance';
 import { ThisProperties } from './instance/prototype';
 import { getRenderingInstance } from './instance/renderDepend';
-import { LIFE, This } from './types/instance';
+import { hookKeys, LIFE, This } from './types/instance';
 import { ObjectKey } from './types/object';
 import { isFunction, isObject } from './utils';
 
@@ -123,19 +123,9 @@ function getArrayProxy(
     },
   });
 }
-
-const proxyHooks: Array<keyof This> = [
-  'useMounted',
-  'useCreated',
-  'useExpose',
-  'useNext',
-  'useWatch',
-  'useRefs',
-  'refs',
-];
 function getInstanceProxy(instance: Instance) {
   const obj = new ThisProperties();
-  proxyHooks.forEach((key) => {
+  hookKeys.forEach((key) => {
     Object.defineProperty(obj, key, {
       get() {
         if (isFunction(instance[key])) {
@@ -150,15 +140,15 @@ function getInstanceProxy(instance: Instance) {
   const proxy = getProxy(obj);
   return new Proxy(obj, {
     get(target, key: any) {
-      if (proxyHooks.includes(key)) {
+      if (hookKeys.includes(key)) {
         return obj[key];
       } else {
         return proxy[key];
       }
     },
     set(target, key, value) {
-      if (proxyHooks.includes(key as any)) {
-        throw new Error(`fields of this [${proxyHooks.join(", ")}] is readonly`)
+      if (hookKeys.includes(key as any)) {
+        throw new Error(`fields of this [${hookKeys.join(", ")}] is readonly`)
       }
       proxy[key] = value;
       return true;

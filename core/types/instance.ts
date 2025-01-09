@@ -31,7 +31,17 @@ export type InstanceExpose = { [name: ObjectKey]: any }
 
 export type Refs = { [name: ObjectKey]: InstanceExpose | HTMLElement }
 
-export type This<T extends object = {}> = {
+export const hookKeys = [
+  'useMounted',
+  'useCreated',
+  'useExpose',
+  'useNext',
+  'useWatch',
+  'useRefs',
+  'refs',
+] as const
+
+type HookTypes = {
   refs: Refs
   useRefs: () => Refs
   useCreated: (fun: Function) => void
@@ -39,7 +49,8 @@ export type This<T extends object = {}> = {
   useExpose: (expose: InstanceExpose) => void
   useNext: (fun: Function) => void
   useWatch: (fun: Watcher['handler'], depends: Watcher['depends']) => void
-} & T
+}
+export type This<T extends object = {}> = { [K in (typeof hookKeys)[number]]: HookTypes[K] } & T
 
 export type RenderRoot = (jsxNode: JsxNode, dom: HTMLElement) => void
 
