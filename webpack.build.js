@@ -1,35 +1,35 @@
-const path = require("path");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
-  mode: "production",
-  entry: "./core/index.ts",
+  mode: 'production',
+  entry: './core/index.ts',
   devtool: false,
   experiments: {
-    outputModule: process.env.type === 'module'
+    outputModule: process.env.type === 'module',
   },
   output: {
-    path: path.resolve(__dirname, "./dist"),
+    path: path.resolve(__dirname, './dist'),
     filename: `core.${process.env.type}.js`,
     library: {
-      type: process.env.type
-    }
+      type: process.env.type,
+    },
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx', ".json"]
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
   },
   module: {
     rules: [
       {
-        test: /[\.tsx?|\.jsx?|\.ts?|\.js?]$/,
+        test: /[.tsx?|.jsx?|.ts?|.js?]$/,
         exclude: /node_modules/,
         use: {
-          loader: "babel-loader",
+          loader: 'babel-loader',
         },
       },
     ],
   },
   plugins: [
     process.env.type === 'commonjs' && new CleanWebpackPlugin(),
-  ]
+  ],
 };
