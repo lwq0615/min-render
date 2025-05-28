@@ -1,3 +1,1 @@
-
-
-export type UseReactive = <T>(defaultStore?: T) => T
+export type Reactive = <T>(defaultStore?: T) => T

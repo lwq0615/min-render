@@ -1,10 +1,10 @@
-import { InstanceExpose, Watcher } from "core/types/instance";
-import { getRenderingInstance } from "./renderDepend";
-import { Instance } from "./Instance";
+import { InstanceExpose, Watcher } from 'core/types/instance'
+import { Instance } from './Instance'
+import { getRenderingInstance } from './renderDepend'
 
 function getRendering(): Instance {
-  const renderingInstance = getRenderingInstance();
-  if(!renderingInstance) {
+  const renderingInstance = getRenderingInstance()
+  if (!renderingInstance) {
     throw new Error("hook function must be called in Component function and it's must be sync run")
   }
   return renderingInstance
